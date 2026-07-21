@@ -44,3 +44,14 @@ class User(Base):
         default = utcnow, 
         onupdate=utcnow
     )
+
+    sent_friend_requests: Mapped[list["Friendship"]] = relationship(
+        foreign_keys = "Friendship.requester_id",
+        back_populates = "requester",
+        passive_deletes = True
+    )
+    received_friend_requests: Mapped[list["Friendship"]] = relationship(
+        foreign_keys="Friendship.addressee_id",
+        back_populates="addressee",
+        passive_deletes=True,
+    )
