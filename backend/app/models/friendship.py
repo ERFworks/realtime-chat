@@ -1,6 +1,6 @@
 import enum
 
-from app.models.user import utcnow 
+from app.utils.time import utcnow
 from app.db.base_class import Base
 from datetime import datetime
 from sqlalchemy import ForeignKey, DateTime, Enum, UniqueConstraint, CheckConstraint
