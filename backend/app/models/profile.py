@@ -12,5 +12,9 @@ class Profile(Base):
     biography: Mapped[str | None] = mapped_column(Text, nullable=True)
     profile_pic: Mapped[str | None] = mapped_column(String(255), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"), unique=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"), 
+        unique=True, 
+        nullable=False
+        )
     user: Mapped["User"] = relationship(back_populates="profile")
