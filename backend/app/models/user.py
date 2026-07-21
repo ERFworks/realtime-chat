@@ -1,5 +1,6 @@
 import uuid
 
+from datetime import datetime
 from app.utils.time import utcnow
 from app.db.base_class import Base
 from sqlalchemy import String, Integer, DateTime
