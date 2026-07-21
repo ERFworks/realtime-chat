@@ -3,7 +3,7 @@ import uuid
 from app.db.base_class import Base
 from datetime import datetime, timezone
 from sqlalchemy import String, Integer, DateTime
-from sqlalchemy.orm import Mapped ,mapped_column
+from sqlalchemy.orm import Mapped ,mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
 
@@ -22,7 +22,13 @@ class User(Base):
         nullable=False, 
         index=True
     )
-        
+
+    profile: Mapped["Profile"] = relationship(
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
+
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     first_name: Mapped[str] = mapped_column(String, nullable=False)
