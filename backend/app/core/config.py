@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024
     ALLOWD_IMAGE_TYPES: set[str] = {"image/jpeg", "image/png", "image/webp"}
 
+
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES:int
+    REFRESH_TOKEN_EXPIRE_DAYS: int
+
     model_config = SettingsConfigDict(env_file=".env")
 
 
