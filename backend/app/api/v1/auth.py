@@ -53,3 +53,8 @@ async def login(credentials: LoginIn, db: AsyncSession = Depends(get_db)):
         access_token = create_access_token(payload),
         refresh_token = create_refresh_token(payload)
     )
+
+
+@router.get("/me", response_model=UserOut)
+async def me(current_user: User = Depends(get_current_user)):
+    return current_user
