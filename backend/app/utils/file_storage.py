@@ -62,5 +62,5 @@ def get_profile_picture_url(key: str | None) -> str | None:
     return s3_client.generate_presigned_url(
         "get_object",
         Params = {"Bucket": settings.MINIO_BUCKET_NAME, "Key": key},
-        ExpiersIn = 3600
+        ExpiresIn = 3600
     )
