@@ -6,6 +6,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.api.deps import get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.exc import IntegrityError
 from app.core.security import (
     hash_password,
     verify_password,
@@ -22,7 +23,7 @@ async def register (user: RegisterIn, db: AsyncSession = Depends(get_db)):
 
     if result.scalar_one_or_none():
         raise HTTPException(
-            status_code = status.HTTP_400_BAD_REQUEST,
+            status_code = status.HTTP_409_CONFLICT,
             detail = f"username already exists"
         )
 
@@ -34,12 +35,21 @@ async def register (user: RegisterIn, db: AsyncSession = Depends(get_db)):
     )
 
     db.add(new_user)
-    await db.commit()
+    try:
+        await db.commit()
+
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code = status.HTTP_409_CONFLICT,
+            detail = "Username already exist",
+        ) from None
+
     await db.refresh(new_user)
     return new_user
 
 
-@router.post("/login", response_model=TokenOut)
+@router.post("/login", response_model=TokenOut, status_code= status.HTTP_201_CREATED)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)
