@@ -24,14 +24,14 @@ async def get_current_user(
         if payload.get("type") != "access":
             raise credentials_exc
 
-        user_id = payload.get("sub")
+        user_id = int(payload.get("sub"))
         if user_id is None:
             raise credentials_exc
 
-    except JWTError:
-        raise credentials_exc
+    except (JWTError, KeyError, TypeError, ValueError):
+        raise credentials_exc from None
 
-    result = await db.execute(select(User).where(User.user_id == int(user_id)))
+    result = await db.execute(select(User).where(User.user_id == user_id))
     user = result.scalar_one_or_none()
 
     if user is None:
