@@ -99,3 +99,13 @@ async def login_user(
             "password" : password
         }
     ) 
+
+
+async def get_auth_headers(
+        client: AsyncClient,
+        username: str = "erf",
+        password: str = "strong-password-123",
+):
+    response = await login_user(client, username=username, password=password)
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
