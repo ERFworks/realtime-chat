@@ -1,34 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
-async def register_user(
-    client: AsyncClient,
-    username: str = "erf",
-    password: str = "strong-password-123",
-):
-    return await client.post(
-        "/api/v1/auth/register",
-        json={
-            "username": username,
-            "password": password,
-            "first_name": "erfan",
-            "last_name": None,
-        },
-    )
-
-async def login_user(
-    client: AsyncClient,
-    username: str = "erf",
-    password: str = "strong-password-123",
-):
-    return await client.post(
-        "/api/v1/auth/login",
-        data={
-            "username": username,
-            "password" : password
-        }
-    ) 
-
+from tests.conftest import register_user, login_user
 
 
 @pytest.mark.asyncio
