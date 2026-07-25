@@ -27,4 +27,4 @@ def create_refresh_token(data: dict):
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 def decode_token(token: str):
-    return jwt.decode(token, settings.SECRET_KEY, algorithms=settings.ALGORITHM)
+    return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
