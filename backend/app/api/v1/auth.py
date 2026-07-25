@@ -7,6 +7,7 @@ from app.models.user import User
 from app.api.deps import get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
+from app.utils.normalization import normalize
 from app.core.security import (
     hash_password,
     verify_password,
@@ -54,7 +55,9 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)
 ):
-    result = await db.execute(select(User).where(User.username == form_data.username))
+
+    username = normalize(form_data.username)
+    result = await db.execute(select(User).where(User.username == username))
 
     user = result.scalar_one_or_none()
 
