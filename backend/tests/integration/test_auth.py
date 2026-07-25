@@ -192,3 +192,10 @@ async def test_username_is_case_insensitive(client: AsyncClient):
 
     assert first_response.status_code == 201
     assert second_response.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_login_is_case_insensitive(client: AsyncClient):
+    await register_user(client, username="ERfan")
+    response = await login_user(client, username="  ERfan  ")
+    assert response.status_code == 201
