@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict, field_validator
+from app.utils.normalization import normalize
 
 class RegisterIn(BaseModel):
     username: str = Field(min_length=3, max_length=50)
@@ -9,7 +10,7 @@ class RegisterIn(BaseModel):
     @field_validator("username")
     @classmethod
     def normalize_username(cls, value: str) -> str:
-        value = value.strip().lower()
+        value = normalize(value)
 
         if not value:
             raise ValueError("Username cannot be empty")
