@@ -109,3 +109,24 @@ async def get_auth_headers(
     response = await login_user(client, username=username, password=password)
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
+
+
+async def get_conversation_headers(
+    client: AsyncClient,
+    username: str = "erf",
+    password: str = "strong-password-123",
+):
+    await register_user(client)
+    await register_user(client, username="mmd")
+
+    headers = await get_auth_headers(client, username="mmd")
+
+
+    response = await client.post(
+        "/api/v1/conversations",
+        json={"other_user_id":1},
+        headers=headers
+    )
+
+    return headers
