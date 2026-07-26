@@ -1,4 +1,3 @@
-# docker-compose.yml
 services:
   db:
     image: postgres:16
@@ -8,6 +7,11 @@ services:
       POSTGRES_DB: chat
     ports: ["5432:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chat -d chat"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   test_db:
     image: postgres:16
@@ -30,6 +34,24 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+
+  backend:
+    build: .
+    ports: ["8000:8000"]
+    env_file: .env
+    # قبل از اجرا، مایگریشن‌ها را خودکار بزن، بعد سرور را بالا بیاور
+    command: >
+      sh -c "uv run alembic upgrade head &&
+             uv run uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    # مقادیری که داخل شبکه‌ی داکر باید فرق کنند را override می‌کنیم
+    environment:
+      SQLALCHEMY_DATABASE_URL: postgresql+asyncpg://chat:chat@db:5432/chat
+      MINIO_ENDPOINT: minio:9000
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_started
 
 volumes:
   pgdata:
