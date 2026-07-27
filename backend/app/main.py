@@ -6,7 +6,7 @@ from starlette.concurrency import run_in_threadpool
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import auth, conversations, messages, friends, profiles
+from app.api.v1 import auth, conversations, messages, friends, profiles, users
 from app.core.config import settings
 from app.utils.file_storage import ensure_bucket_exists
 
@@ -31,6 +31,8 @@ app.include_router(messages.router, prefix="/api/v1/conversations")
 app.include_router(friends.router, prefix="/api/v1/friends")
 app.include_router(profiles.router, prefix="/api/v1/profile")
 app.include_router(ws_router.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1/users")
+
 
 @app.get("/health")
 async def health():
