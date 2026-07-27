@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
+from app.models.profile import Profile
 
 async def get_user_by_id(db: AsyncSession, user_id: int) -> User | None:
     result = await db.execute(select(User).where(User.user_id == user_id))
@@ -11,9 +12,10 @@ async def search_users(
     query: str,
     exclude_user_id: int,
     limit: int = 20,
-) -> list[User]:
+) -> list[tuple[User, str|None]]:
     stmt = (
-        select(User)
+        select(User, Profile.profile_pic)
+        .join(Profile, Profile.user_id == User.user_id, isouter=True)
         .where(
             User.username.ilike(f"%{query}%"),
             User.user_id != exclude_user_id
@@ -21,4 +23,4 @@ async def search_users(
         .limit(limit)
     )
     result = await db.execute(stmt)
-    return list(result.scalars().all())
+    return list((row[0], row[1]) for row in result.all())
