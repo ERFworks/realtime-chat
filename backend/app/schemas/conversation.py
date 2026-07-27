@@ -11,6 +11,7 @@ class ParticipantOut(BaseModel):
     username: str
     first_name: str
     last_name: str | None = None
+    profile_pic : str | None = None
     model_config = ConfigDict(from_attributes=True)
 
 class ConversationOut(BaseModel):

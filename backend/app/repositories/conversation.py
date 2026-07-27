@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.conversation import ConversationType, Conversation
 from app.models.conversationparticipant import ConversationParticipant
 from app.models.user import User
+from app.models.profile import Profile
 
 async def get_private_conversation_id(
     db: AsyncSession,
@@ -62,6 +63,19 @@ async def get_participants(db: AsyncSession, conversation_id: int) -> list[User]
     )
     return list(result.scalars().all())
 
+
+async def get_participants_with_profiles(
+    db: AsyncSession, 
+    conversation_id: int
+) -> list[tuple[User, str|None]]:
+    result = await db.execute(
+        select(User, Profile.profile_pic)
+        .join(ConversationParticipant, ConversationParticipant.user_id == User.user_id)
+        .join(Profile, Profile.user_id == User.user_id, isouter=True)
+        .where(ConversationParticipant.conversation_id == conversation_id)
+    )
+
+    return [(row[0], row[1]) for row in result.all()]
 
 async def list_user_conversations(db: AsyncSession, user_id: int) -> list[Conversation]:
     result = await db.execute(
