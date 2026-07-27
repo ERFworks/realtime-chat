@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_
 
 from app.models.user import User
+from app.models.profile import Profile
 from app.models.friendship import Friendship, FriendshipStatus
 
 async def create_friend_request(
@@ -38,27 +39,22 @@ async def get_friendship_between(
     return result.scalar_one_or_none()
 
 
-async def list_friends(db: AsyncSession, user_id: int) -> list[User]:
-
+async def list_friends(db: AsyncSession, user_id: int) -> list[tuple[User, str | None]]:
     stmt = (
-        select(User)
+        select(User, Profile.profile_pic)         
         .join(
             Friendship,
             or_(
-                and_(
-                    Friendship.requester_id == user_id,
-                    Friendship.addressee_id == User.user_id
-                ),
-                and_(
-                    Friendship.addressee_id == user_id,
-                    Friendship.requester_id == User.user_id
-                )
-            )
-        ).where(Friendship.status == FriendshipStatus.ACCEPTED)
+                and_(Friendship.requester_id == user_id, Friendship.addressee_id == User.user_id),
+                and_(Friendship.addressee_id == user_id, Friendship.requester_id == User.user_id),
+            ),
+        )
+        .join(Profile, Profile.user_id == User.user_id, isouter=True)     
+        .where(Friendship.status == FriendshipStatus.ACCEPTED)
     )
-
+    
     result = await db.execute(stmt)
-    return list(result.scalars().all())
+    return [(row[0], row[1]) for row in result.all()]
 
 
 

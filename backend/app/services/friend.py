@@ -10,6 +10,8 @@ from app.schemas.auth import UserOut
 
 from app.models.friendship import FriendshipStatus
 
+from app.utils.file_storage import get_profile_picture_url 
+
 
 async def add_friend(
     db: AsyncSession, 
@@ -84,7 +86,16 @@ async def respond_to_request(
 async def list_my_friends(db: AsyncSession, user_id: int) -> list[UserOut]:
 
     friends = await friend_repo.list_friends(db, user_id)
-    return [UserOut.model_validate(f) for f in friends]
+    return [
+        UserOut(
+            user_id=user.user_id,
+            username=user.username,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            profile_pic=get_profile_picture_url(key)
+        )
+        for user, key in friends
+    ]
 
 
 async def list_my_pending_requests(db: AsyncSession, user_id: int) -> list[FriendOut]:
