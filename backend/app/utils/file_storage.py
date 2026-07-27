@@ -16,6 +16,25 @@ s3_client = boto3.client(
     region_name = "us-east-1"
 )
 
+_public_endpoint = settings.MINIO_PUBLIC_ENDPOINT or settings.MINIO_ENDPOINT
+s3_public_client = boto3.client(
+    "s3",
+    endpoint_url=f"http{'s' if settings.MINIO_USE_SSL else ''}://{_public_endpoint}",
+    aws_access_key_id=settings.MINIO_ACCESS_KEY,
+    aws_secret_access_key=settings.MINIO_SECRET_KEY,
+    config=Config(signature_version="s3v4"),
+    region_name="us-east-1",
+)
+
+def get_profile_picture_url(key: str | None) -> str | None:
+    if key is None:
+        return None
+    return s3_public_client.generate_presigned_url(   # ← عمومی
+        "get_object",
+        Params={"Bucket": settings.MINIO_BUCKET_NAME, "Key": key},
+        ExpiresIn=3600,
+    )
+
 def ensure_bucket_exists() -> None:
     try:
         s3_client.head_bucket(Bucket = settings.MINIO_BUCKET_NAME)
@@ -53,14 +72,3 @@ async def save_profile_picture(file: UploadFile, user_guid: uuid.UUID) -> str:
 
 def delete_profile_picture(key: str) -> None:
     s3_client.delete_object(Bucket = settings.MINIO_BUCKET_NAME, Key = key)
-
-
-def get_profile_picture_url(key: str | None) -> str | None:
-    if key is None:
-        return None
-    
-    return s3_client.generate_presigned_url(
-        "get_object",
-        Params = {"Bucket": settings.MINIO_BUCKET_NAME, "Key": key},
-        ExpiresIn = 3600
-    )

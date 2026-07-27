@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str
     MINIO_BUCKET_NAME: str
     MINIO_USE_SSL: bool = False
+    MINIO_PUBLIC_ENDPOINT: str | None = None
 
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024
     ALLOWD_IMAGE_TYPES: set[str] = {"image/jpeg", "image/png", "image/webp"}
