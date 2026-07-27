@@ -58,7 +58,7 @@ async def test_login_successful(client: AsyncClient):
 
     login_response = await login_user(client)
 
-    assert login_response.status_code == 201
+    assert login_response.status_code == 200
 
     data = login_response.json()
 
