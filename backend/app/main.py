@@ -29,6 +29,8 @@ app.include_router(auth.router, prefix="/api/v1/auth")
 app.include_router(conversations.router, prefix="/api/v1/conversations")
 app.include_router(messages.router, prefix="/api/v1/conversations")
 app.include_router(friends.router, prefix="/api/v1/friends")
+app.include_router(profiles.router, prefix="/api/v1/profile")
+app.include_router(ws_router.router, prefix="/api/v1")
 
 @app.get("/health")
 async def health():
