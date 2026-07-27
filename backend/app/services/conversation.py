@@ -64,7 +64,7 @@ async def get_or_create_private_conversation(
         db, [current_user_id, other_user_id]
     )
     await db.commit()
-    await db.refresh(conv)
+    await db.refresh(conv) 
     participants = await conv_repo.get_participants_with_profiles(db, conv.conversation_id)  
     return _to_out(conv, participants)
 
@@ -72,7 +72,7 @@ async def list_conversations(db: AsyncSession, user_id: int) -> list[Conversatio
     conversations = await conv_repo.list_user_conversations(db, user_id)
     result = []
     for conv in conversations:
-        participants = await conv_repo.get_participants(db, conv.conversation_id)
+        participants = await conv_repo.get_participants_with_profiles(db, conv.conversation_id)
         result.append(_to_out(conv, participants))
 
     return result
