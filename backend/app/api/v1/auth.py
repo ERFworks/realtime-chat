@@ -9,6 +9,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from app.utils.normalization import normalize
 from jose import JWTError
+from app.repositories import profile as profile_repo
 from app.core.security import (
     hash_password,
     verify_password,
@@ -38,21 +39,24 @@ async def register (user: RegisterIn, db: AsyncSession = Depends(get_db)):
     )
 
     db.add(new_user)
-    try:
-        await db.commit()
 
+    try:
+        await db.flush()
+        await profile_repo.create_profile(db, new_user.user_id)
+        await db.commit()
     except IntegrityError:
         await db.rollback()
         raise HTTPException(
-            status_code = status.HTTP_409_CONFLICT,
-            detail = "Username already exist",
-        ) from None
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Username already exists"
+        )from None
+
 
     await db.refresh(new_user)
     return new_user
 
 
-@router.post("/login", response_model=TokenOut, status_code= status.HTTP_201_CREATED)
+@router.post("/login", response_model=TokenOut, status_code= status.HTTP_200_OK)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)

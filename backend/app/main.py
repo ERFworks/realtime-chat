@@ -1,11 +1,21 @@
+from app.websocket import router as ws_router
+
+from contextlib import asynccontextmanager
+from starlette.concurrency import run_in_threadpool
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import auth, conversations, messages, friends
+from app.api.v1 import auth, conversations, messages, friends, profiles
 from app.core.config import settings
-from app.db import base
+from app.utils.file_storage import ensure_bucket_exists
 
-app = FastAPI(title="Raeltime Chat App")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await run_in_threadpool(ensure_bucket_exists)
+    yield
+
+app = FastAPI(title="Realtime Chat App", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
