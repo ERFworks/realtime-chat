@@ -95,9 +95,9 @@ async def list_my_friends(
             username=user.username,
             first_name=user.first_name,
             last_name=user.last_name,
-            profile_pic=get_profile_picture_url(key)
+            profile_pic=get_profile_picture_url(user.profile.profile_pic if user.profile else None)
         )
-        for user, key in friends
+        for user in friends
     ]
 
 

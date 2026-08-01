@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlalchemy import select, or_, and_
 from typing import Protocol
 
@@ -11,7 +12,7 @@ class AbstractFriendRepository(Protocol):
     async def get_friendship_between(self, user_a: int, user_b: int) -> Friendship | None: ...
     async def get_friendship_by_id(self, friendship_id: int) -> Friendship | None: ...
     async def update_friendship_status(self, friendship_id: int, status: FriendshipStatus) -> Friendship | None: ...
-    async def list_friends(self, user_id: int) -> list[tuple["User", str | None]]: ...
+    async def list_friends(self, user_id: int) -> list[User]: ...
     async def list_pending_requests(self, user_id: int) -> list[Friendship]: ...
 
 
@@ -58,22 +59,22 @@ class SqlAlchemyFriendRepository:
         return result.scalar_one_or_none()
 
 
-    async def list_friends(self, user_id: int) -> list[tuple[User, str | None]]:
+    async def list_friends(self, user_id: int) -> list[User]:
         stmt = (
-            select(User, Profile.profile_pic)         
+            select(User)         
             .join(
                 Friendship,
                 or_(
                     and_(Friendship.requester_id == user_id, Friendship.addressee_id == User.user_id),
                     and_(Friendship.addressee_id == user_id, Friendship.requester_id == User.user_id),
                 ),
-            )
-            .join(Profile, Profile.user_id == User.user_id, isouter=True)     
+            )    
             .where(Friendship.status == FriendshipStatus.ACCEPTED)
+            .options(selectinload(User.profile))
         )
         
         result = await self.session.execute(stmt)
-        return [(row[0], row[1]) for row in result.all()]
+        return list(result.scalars().all())
 
 
     async def list_pending_requests(self, user_id: int):

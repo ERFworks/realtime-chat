@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.conversation import Conversation
 from app.repositories import conversation as conv_repo
-from app.repositories import user as user_repo
+from app.repositories.user import AbstractUserRepository
 from app.schemas.conversation import ConversationOut, ParticipantOut
 from app.utils.file_storage import get_profile_picture_url
 from app.models.profile import Profile
@@ -34,7 +34,8 @@ def _to_out(conv: Conversation, participants) -> ConversationOut:
 async def get_or_create_private_conversation(
     db: AsyncSession,
     current_user_id: int,
-    other_user_id: int
+    other_user_id: int,
+    user_repo: AbstractUserRepository
 ) -> ConversationOut:
 
     if current_user_id == other_user_id:
@@ -43,7 +44,7 @@ async def get_or_create_private_conversation(
             detail = "Cannot create a conversation with yourself"
         ) 
 
-    if not await user_repo.get_user_by_id(db, other_user_id):
+    if not await user_repo.get_user_by_id(other_user_id):
         raise HTTPException(
             status_code = status.HTTP_404_NOT_FOUND,
             detail = "User not found"

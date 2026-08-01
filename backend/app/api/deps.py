@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.core.security import decode_token
 from app.models.user import User
+from app.repositories.user import AbstractUserRepository, SqlAlchemyUserRepository
+from app.repositories.friend import AbstractFriendRepository, SqlAlchemyFriendRepository
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -38,3 +40,9 @@ async def get_current_user(
         raise credentials_exc
 
     return user
+
+async def get_friend_repo(db: AsyncSession = Depends(get_db)) -> AbstractFriendRepository:
+    return SqlAlchemyFriendRepository(db)
+
+async def get_user_repo(db: AsyncSession = Depends(get_db)) -> AbstractUserRepository:
+    return SqlAlchemyUserRepository(db)
