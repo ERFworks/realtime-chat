@@ -1,11 +1,12 @@
-from fastapi import HTTPException, status, UploadFile
+import uuid
 
+from fastapi import HTTPException, status, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.profile import Profile
 from app.schemas.profile import ProfileOut
 from app.repositories.profile import AbstractProfileRepository
-from app.repositories.user import AbstractUserRepository
 from app.utils.file_storage import save_profile_picture, delete_profile_picture, get_profile_picture_url
 
 
@@ -26,7 +27,7 @@ async def _get_profile_or_404(
     if profile is None:
         raise HTTPException(
             status_code = status.HTTP_404_NOT_FOUND,
-            detail = "User not found"
+            detail = "Profile not found"
         )
     return profile
 
@@ -42,7 +43,8 @@ async def get_my_profile(
 async def update_bio(
     db: AsyncSession, 
     profile_repo: AbstractProfileRepository,
-    user_id, biography:str
+    user_id: int, 
+    biography: str | None
 ) -> ProfileOut:
     profile = await _get_profile_or_404(profile_repo ,user_id)
     profile.biography = biography
@@ -55,13 +57,12 @@ async def update_bio(
 async def set_profile_picture(
     db: AsyncSession, 
     profile_repo: AbstractProfileRepository,
-    user_repo: AbstractUserRepository,
     user_id: int, 
+    user_guid: uuid.UUID,
     file: UploadFile
 ) -> ProfileOut:
     profile = await _get_profile_or_404(profile_repo ,user_id)
-    user = await user_repo.get_user_by_id(user_id)
-    new_key = await save_profile_picture(file, user.guid)
+    new_key = await save_profile_picture(file, user_guid)
 
     old_key = profile.profile_pic
 
@@ -70,6 +71,6 @@ async def set_profile_picture(
     await db.refresh(profile)
 
     if old_key is not None:
-       delete_profile_picture(old_key)
+       await run_in_threadpool(delete_profile_picture, old_key)
 
     return _to_profile_out(profile)
