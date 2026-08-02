@@ -4,8 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.profile import Profile
 from app.schemas.profile import ProfileOut
-from app.repositories import profile as profile_repo
-from app.repositories import user as user_repo
+from app.repositories.profile import AbstractProfileRepository
+from app.repositories.user import AbstractUserRepository
 from app.utils.file_storage import save_profile_picture, delete_profile_picture, get_profile_picture_url
 
 
@@ -17,8 +17,11 @@ def _to_profile_out(profile: Profile) -> ProfileOut:
         profile_pic=get_profile_picture_url(profile.profile_pic)
     )
 
-async def _get_profile_or_404(db: AsyncSession, user_id: int) -> Profile:
-    profile = await profile_repo.get_profile_by_user_id(db, user_id)
+async def _get_profile_or_404(
+    profile_repo: AbstractProfileRepository, 
+    user_id: int
+) -> Profile:
+    profile = await profile_repo.get_profile_by_user_id(user_id)
 
     if profile is None:
         raise HTTPException(
@@ -28,13 +31,20 @@ async def _get_profile_or_404(db: AsyncSession, user_id: int) -> Profile:
     return profile
 
 
-async def get_my_profile(db: AsyncSession, user_id: int) -> ProfileOut:
-    profile = await _get_profile_or_404(db, user_id)
+async def get_my_profile(
+    profile_repo: AbstractProfileRepository,
+    user_id: int
+) -> ProfileOut:
+    profile = await _get_profile_or_404(profile_repo, user_id)
     return _to_profile_out(profile)
 
 
-async def update_bio(db: AsyncSession, user_id, biography:str) -> ProfileOut:
-    profile = await _get_profile_or_404(db, user_id)
+async def update_bio(
+    db: AsyncSession, 
+    profile_repo: AbstractProfileRepository,
+    user_id, biography:str
+) -> ProfileOut:
+    profile = await _get_profile_or_404(profile_repo ,user_id)
     profile.biography = biography
     await db.commit()
     await db.refresh(profile)
@@ -42,9 +52,15 @@ async def update_bio(db: AsyncSession, user_id, biography:str) -> ProfileOut:
     return _to_profile_out(profile)
 
 
-async def set_profile_picture(db: AsyncSession, user_id: int, file: UploadFile) -> ProfileOut:
-    profile = await _get_profile_or_404(db, user_id)
-    user = await user_repo.get_user_by_id(db, user_id)
+async def set_profile_picture(
+    db: AsyncSession, 
+    profile_repo: AbstractProfileRepository,
+    user_repo: AbstractUserRepository,
+    user_id: int, 
+    file: UploadFile
+) -> ProfileOut:
+    profile = await _get_profile_or_404(profile_repo ,user_id)
+    user = await user_repo.get_user_by_id(user_id)
     new_key = await save_profile_picture(file, user.guid)
 
     old_key = profile.profile_pic

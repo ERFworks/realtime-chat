@@ -9,6 +9,7 @@ from app.core.security import decode_token
 from app.models.user import User
 from app.repositories.user import AbstractUserRepository, SqlAlchemyUserRepository
 from app.repositories.friend import AbstractFriendRepository, SqlAlchemyFriendRepository
+from app.repositories.profile import AbstractProfileRepository, SqlAlchemyProfileRepository
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -46,3 +47,6 @@ async def get_friend_repo(db: AsyncSession = Depends(get_db)) -> AbstractFriendR
 
 async def get_user_repo(db: AsyncSession = Depends(get_db)) -> AbstractUserRepository:
     return SqlAlchemyUserRepository(db)
+
+async def get_profile_repo(db: AsyncSession = Depends(get_db)) -> AbstractProfileRepository:
+    return SqlAlchemyProfileRepository(db)
