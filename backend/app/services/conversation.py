@@ -5,7 +5,7 @@ from app.repositories.conversation import Conversation
 from app.repositories import conversation as conv_repo
 from app.repositories.user import AbstractUserRepository
 from app.schemas.conversation import ConversationOut, ParticipantOut
-from app.utils.file_storage import get_profile_picture_url
+from app.utils.file_storage import presigned_url
 from app.models.profile import Profile
 from app.models.user import User
 
@@ -17,7 +17,7 @@ def _to_participant_out(user: User, profile_pic_key: str | None) -> ParticipantO
         username=user.username,
         first_name=user.first_name,
         last_name=user.last_name,
-        profile_pic=get_profile_picture_url(profile_pic_key)
+        profile_pic=presigned_url(profile_pic_key)
     )
 
 

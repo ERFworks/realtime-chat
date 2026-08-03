@@ -6,7 +6,7 @@ from app.repositories.user import AbstractUserRepository
 from app.schemas.friend import FriendOut
 from app.schemas.auth import UserOut
 from app.models.friendship import FriendshipStatus
-from app.utils.file_storage import get_profile_picture_url 
+from app.utils.file_storage import presigned_url
 
 
 async def add_friend(
@@ -95,7 +95,7 @@ async def list_my_friends(
             username=user.username,
             first_name=user.first_name,
             last_name=user.last_name,
-            profile_pic=get_profile_picture_url(user.profile.profile_pic if user.profile else None)
+            profile_pic=presigned_url(user.profile.profile_pic if user.profile else None)
         )
         for user in friends
     ]

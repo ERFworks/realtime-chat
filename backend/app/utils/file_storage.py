@@ -26,10 +26,10 @@ s3_public_client = boto3.client(
     region_name="us-east-1",
 )
 
-def get_profile_picture_url(key: str | None) -> str | None:
+def presigned_url(key: str | None) -> str | None:
     if key is None:
         return None
-    return s3_public_client.generate_presigned_url(   # ← عمومی
+    return s3_public_client.generate_presigned_url(  
         "get_object",
         Params={"Bucket": settings.MINIO_BUCKET_NAME, "Key": key},
         ExpiresIn=3600,
@@ -42,33 +42,14 @@ def ensure_bucket_exists() -> None:
         s3_client.create_bucket(Bucket = settings.MINIO_BUCKET_NAME)
 
 
-async def save_profile_picture(file: UploadFile, user_guid: uuid.UUID) -> str:
-    if file.content_type not in settings.ALLOWD_IMAGE_TYPES:
-        raise HTTPException(
-            status_code = status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail = "Invalid file format(only JPEG, PNG, WEBP allowed)"
-        )
-    
-    contents = await file.read()
-    if len(contents) > settings.MAX_UPLOAD_SIZE:
-        raise HTTPException(
-            status_code = status.HTTP_413_CONTENT_TOO_LARGE,
-            detail = "File too large" 
-        )
-    
-    ext = file.content_type.split("/")[-1]
-    key = f"profile_pics/{user_guid}/{uuid.uuid4()}.{ext}"
-
-    await run_in_threadpool(
-        s3_client.put_object,
-        Bucket = settings.MINIO_BUCKET_NAME,
-        Key = key,
-        Body = contents,
-        ContentType = file.content_type
+def put_object(key: str, content: bytes, content_type: str) -> None:
+    s3_client.put_object(
+        Bucket=settings.MINIO_BUCKET_NAME,
+        Key=key,
+        Body=content,
+        ContentType=content_type,
     )
 
-    return key
 
-
-def delete_profile_picture(key: str) -> None:
+def delete_object(key: str) -> None:
     s3_client.delete_object(Bucket = settings.MINIO_BUCKET_NAME, Key = key)
