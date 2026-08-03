@@ -2,6 +2,9 @@ from app.models.friendship import Friendship, FriendshipStatus
 from app.models.user import User
 from app.models.profile import Profile
 from app.models.message import Message
+from app.models.conversation import Conversation, ConversationType
+from app.models.conversationparticipant import ConversationParticipant
+from app.utils.time import utcnow
 
 class FakeFriendRepository:
     def __init__(self, friendships=None, users: dict[int, User] | None = None):
@@ -155,3 +158,64 @@ class FakeMessageRepository:
 
         msgs.sort(key=lambda m : m.message_id, reverse=True)
         return msgs[:limit]
+
+
+class FakeConversationRepository:
+    def __init__(
+            self, 
+            conversations: list[Conversation] | None = None, 
+            participants: list[tuple[int, int]] | None = None,
+            users: dict[int, User] | None = None,
+            profile_pics: dict[int, str | None] | None = None
+        ):
+        self._conversations = list(conversations or [])
+        self._participants = list(participants or [])
+        self._users = users or {}
+        self._profile_pics = profile_pics or {}
+
+    
+    async def get_private_conversation_id(self, user_a: int, user_b: int) -> int | None:
+        convs_a = {cid for cid, uid in self._participants if uid == user_a}
+        convs_b = {cid for cid, uid in self._participants if uid == user_b}
+        shared = convs_a & convs_b
+
+        for conv in self._conversations:
+            if conv.conversation_id in shared and conv.conversation_type == ConversationType.PRIVATE:
+                return conv.conversation_id
+
+        return None
+
+
+    async def get_conversation(self, conversation_id: int) -> Conversation | None:
+        return next((c for c in self._conversations if c.conversation_id == conversation_id), None)
+
+    
+    async def create_private_conversation(self, user_ids: list[int]) -> Conversation:
+        conv = Conversation(
+            conversation_id = len(self._conversations) + 1,
+            conversation_type = ConversationType.PRIVATE,
+            created_at = utcnow(),
+            updated_at = utcnow()
+        )
+        self._conversations.append(conv)
+
+        for uid in user_ids:
+            self._participants.append((conv.conversation_id, uid))
+
+        return conv
+
+
+    async def get_participants(self, conversation_id: int) -> list[User]:
+        return [self._users[uid] for cid, uid in self._participants 
+                   if cid == conversation_id and uid in self._users]
+
+
+    async def get_participants_with_profiles(self, conversation_id: int) -> list[tuple[User, str | None]]:
+        return [(self._users[uid], self._profile_pics.get(uid))
+                for cid, uid in self._participants
+                if cid == conversation_id and uid in self._users]
+
+
+    async def list_user_conversations(self, user_id: int) -> list[Conversation]:
+        ids = {cid for cid, uid in self._participants if uid == user_id}
+        return [c for c in self._conversations if c.conversation_id in ids]

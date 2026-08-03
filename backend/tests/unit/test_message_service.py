@@ -2,8 +2,10 @@ import pytest
 from fastapi import HTTPException
 
 from app.models.message import Message
+from app.models.conversation import Conversation, ConversationType
+from app.models.conversationparticipant import ConversationParticipant
 from app.services.message import send_message, get_messages
-from tests.unit.fakes import FakeMessageRepository, FakeSession
+from tests.unit.fakes import FakeMessageRepository, FakeSession, FakeConversationRepository
 from app.utils.time import utcnow
 
 
@@ -20,7 +22,7 @@ async def test_reject_non_participant():
     repo = FakeMessageRepository()
 
     with pytest.raises(HTTPException) as exc:
-        await send_message(FakeSession(),repo, conversation_id=1, sender_id=1, body="salam")
+        await send_message(FakeSession(),repo, FakeConversationRepository(),conversation_id=1, sender_id=1, body="salam")
 
     assert exc.value.status_code == 403
 
