@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_user_repo, get_conversation_repo
 from app.models.user import User
 from app.schemas.conversation import ConversationCreate, ConversationOut
 from app.services import conversation as conv_service
+from app.repositories.user import AbstractUserRepository
+from app.repositories.conversation import AbstractConversationRepository
 
 router = APIRouter(tags=["conversations"])
 
@@ -14,16 +16,19 @@ router = APIRouter(tags=["conversations"])
 async def create_conversation(
     payload: ConversationCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    user_repo: AbstractUserRepository = Depends(get_user_repo),
+    conv_repo: AbstractConversationRepository = Depends(get_conversation_repo)
 ):
-    return await conv_service.get_or_create_private_conversation(db, current_user.user_id, payload.other_user_id)
+    return await conv_service.get_or_create_private_conversation(db, current_user.user_id, payload.other_user_id, user_repo, conv_repo)
 
 
 @router.get("", response_model=list[ConversationOut])
 async def list_my_conversations(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    conv_repo: AbstractConversationRepository = Depends(get_conversation_repo)
 ):
-    return await conv_service.list_conversations(db, current_user.user_id)
+    return await conv_service.list_conversations(db, current_user.user_id, conv_repo)
 
 

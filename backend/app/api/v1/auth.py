@@ -1,15 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.schemas.auth import RegisterIn, TokenOut, UserOut, RefreshIn
 from app.db.session import get_db
 from app.models.user import User
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_profile_repo
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from app.utils.normalization import normalize
 from jose import JWTError
-from app.repositories import profile as profile_repo
+from app.repositories.profile import AbstractProfileRepository
 from app.core.security import (
     hash_password,
     verify_password,
@@ -22,7 +23,10 @@ from app.core.security import (
 router = APIRouter(tags=["authentication"])
 
 @router.post("/register", response_model=UserOut, status_code = status.HTTP_201_CREATED)
-async def register (user: RegisterIn, db: AsyncSession = Depends(get_db)):
+async def register (
+    user: RegisterIn, 
+    profile_repo: AbstractProfileRepository = Depends(get_profile_repo),
+    db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.username == user.username))
 
     if result.scalar_one_or_none():
@@ -42,7 +46,7 @@ async def register (user: RegisterIn, db: AsyncSession = Depends(get_db)):
 
     try:
         await db.flush()
-        await profile_repo.create_profile(db, new_user.user_id)
+        await profile_repo.create_profile(new_user.user_id)
         await db.commit()
     except IntegrityError:
         await db.rollback()
