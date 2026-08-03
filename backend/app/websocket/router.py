@@ -4,7 +4,8 @@ from pydantic import ValidationError
 from app.db.session import AsyncSessionLocal
 from app.schemas.message import MessageCreate
 from app.services import message as msg_service
-from app.repositories import conversation as conv_repo
+from app.repositories.message import SqlAlchemyMessageRepository
+from app.repositories.conversation import SqlAlchemyConversationRepository
 from app.websocket.manager import manager
 from app.websocket.auth import authenticate_websocket_token
 
@@ -54,13 +55,18 @@ async def _handle_incoming(websocket: WebSocket, user_id: int, data: dict) -> No
 
     try:
         async with AsyncSessionLocal() as db:
+            msg_repo = SqlAlchemyMessageRepository(db)
+            conv_repo = SqlAlchemyConversationRepository(db)
+
             message = await msg_service.send_message(
                 db,
+                msg_repo,
+                conv_repo,
                 conversation_id=conversation_id,
                 sender_id=user_id,
                 body=validated.body
             )
-            participants = await conv_repo.get_participants(db, conversation_id)
+            participants = await conv_repo.get_participants(conversation_id)
     except HTTPException as exc:
         await websocket.send_json({"type": "error", "detail": exc.detail})
         return

@@ -2,10 +2,11 @@ from fastapi import APIRouter, status, Depends
 from app.schemas.message import MessageOut, MessageCreate
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
-from app.api.deps import get_current_user, get_message_repo
+from app.api.deps import get_current_user, get_message_repo, get_conversation_repo
 from app.models.user import User
 from app.services import message as msg_service
 from app.repositories.message import AbstractMessageRepository
+from app.repositories.conversation import AbstractConversationRepository
 
 router = APIRouter(tags=["messages"])
 
@@ -19,14 +20,16 @@ async def send_message(
     payload: MessageCreate,
     msg_repo: AbstractMessageRepository = Depends(get_message_repo), 
     current_user: User = Depends(get_current_user), 
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    conv_repo: AbstractConversationRepository = Depends(get_conversation_repo)
 ):
     return await msg_service.send_message(
         db,
         msg_repo, 
+        conv_repo,
         conversation_id=conversation_id, 
         sender_id=current_user.user_id, 
-        body=payload.body
+        body=payload.body,
     )
 
 @router.get("/{conversation_id}/messages", response_model=list[MessageOut])

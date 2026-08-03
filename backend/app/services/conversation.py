@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.conversation import Conversation
-from app.repositories import conversation as conv_repo
+from app.repositories.conversation import AbstractConversationRepository
 from app.repositories.user import AbstractUserRepository
 from app.schemas.conversation import ConversationOut, ParticipantOut
 from app.utils.file_storage import presigned_url
@@ -35,7 +35,8 @@ async def get_or_create_private_conversation(
     db: AsyncSession,
     current_user_id: int,
     other_user_id: int,
-    user_repo: AbstractUserRepository
+    user_repo: AbstractUserRepository,
+    conv_repo: AbstractConversationRepository
 ) -> ConversationOut:
 
     if current_user_id == other_user_id:
@@ -50,30 +51,32 @@ async def get_or_create_private_conversation(
             detail = "User not found"
         )
 
-    exiting_id = await conv_repo.get_private_conversation_id(
-        db, 
+    exiting_id = await conv_repo.get_private_conversation_id( 
         current_user_id, 
         other_user_id
     )
 
     if exiting_id is not None:
-        conv = await conv_repo.get_conversation(db, exiting_id)
-        participants = await conv_repo.get_participants_with_profiles(db, exiting_id) 
+        conv = await conv_repo.get_conversation(exiting_id)
+        participants = await conv_repo.get_participants_with_profiles(exiting_id) 
         return _to_out(conv, participants)
 
-    conv = await conv_repo.create_private_conversation(
-        db, [current_user_id, other_user_id]
-    )
+    conv = await conv_repo.create_private_conversation([current_user_id, other_user_id])
     await db.commit()
     await db.refresh(conv) 
-    participants = await conv_repo.get_participants_with_profiles(db, conv.conversation_id)  
+    participants = await conv_repo.get_participants_with_profiles(conv.conversation_id)  
     return _to_out(conv, participants)
 
-async def list_conversations(db: AsyncSession, user_id: int) -> list[ConversationOut]:
-    conversations = await conv_repo.list_user_conversations(db, user_id)
+
+async def list_conversations(
+    db: AsyncSession, 
+    user_id: int,
+    conv_repo: AbstractConversationRepository
+) -> list[ConversationOut]:
+    conversations = await conv_repo.list_user_conversations(user_id)
     result = []
     for conv in conversations:
-        participants = await conv_repo.get_participants_with_profiles(db, conv.conversation_id)
+        participants = await conv_repo.get_participants_with_profiles(conv.conversation_id)
         result.append(_to_out(conv, participants))
 
     return result

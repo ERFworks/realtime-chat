@@ -3,15 +3,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.message import MessageOut
 from app.repositories.message import AbstractMessageRepository
-from app.repositories import conversation as conv_repo
+from app.repositories.conversation import AbstractConversationRepository
 from app.utils.time import utcnow
 
 async def send_message(
     db: AsyncSession,
     msg_repo: AbstractMessageRepository, 
+    conv_repo: AbstractConversationRepository,
     conversation_id: int, 
     sender_id: int, 
-    body: str
+    body: str,
 ) -> MessageOut:
     if not await msg_repo.is_participant(conversation_id, sender_id):
         raise HTTPException(
@@ -20,7 +21,7 @@ async def send_message(
         )
 
     msg = await msg_repo.create_message(conversation_id, sender_id, body)
-    conv = await conv_repo.get_conversation(db, conversation_id)
+    conv = await conv_repo.get_conversation(conversation_id)
     conv.updated_at = utcnow()
     await db.commit()
     await db.refresh(msg)

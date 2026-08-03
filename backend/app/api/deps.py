@@ -11,6 +11,7 @@ from app.repositories.user import AbstractUserRepository, SqlAlchemyUserReposito
 from app.repositories.friend import AbstractFriendRepository, SqlAlchemyFriendRepository
 from app.repositories.profile import AbstractProfileRepository, SqlAlchemyProfileRepository
 from app.repositories.message import AbstractMessageRepository, SqlAlchemyMessageRepository
+from app.repositories.conversation import AbstractConversationRepository, SqlAlchemyConversationRepository
 from app.adapters.file_storage import AbstractFileStorage, MinioFileStorage
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -58,6 +59,10 @@ async def get_profile_repo(db: AsyncSession = Depends(get_db)) -> AbstractProfil
 
 async def get_message_repo(db: AsyncSession = Depends(get_db)) -> AbstractMessageRepository:
     return SqlAlchemyMessageRepository(db)
+
+
+async def get_conversation_repo(db: AsyncSession = Depends(get_db)) -> AbstractConversationRepository:
+    return SqlAlchemyConversationRepository(db)
     
 
 async def get_file_storage() -> AbstractFileStorage:
