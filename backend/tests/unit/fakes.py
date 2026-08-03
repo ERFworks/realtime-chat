@@ -1,5 +1,6 @@
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.user import User
+from app.models.profile import Profile
 
 class FakeFriendRepository:
     def __init__(self, friendships=None, users: dict[int, User] | None = None):
@@ -67,3 +68,55 @@ class FakeUserRepository:
 
     async def search_users(self, query: str, exclude_user_id: int, limit: int = 20):
         return []
+
+
+class FakeProfileRepository:
+    def __init__(self, profiles: dict[int, Profile] | None = None):
+        self._profiles = profiles or {}
+
+    async def create_profile(self, user_id: int) -> Profile:
+        profile = Profile(
+            user_id = len(self._profiles) + 1,
+            biography = None,
+            profile_pic = None,
+        )
+        self._profiles[user_id] = profile
+        return profile
+
+    async def get_profile_by_user_id(self, user_id: int) -> Profile | None:
+        return self._profiles.get(user_id)
+
+
+class FakeSession:
+    async def commit(self):
+        pass
+
+    async def refresh(self, obj):
+        pass
+
+
+
+class FakeFileStorage:
+    def __init__(self, url_prefix: str = "https://cdn.test/"):
+        self.put_calls: list = []
+        self.deleted: list = []
+        self._prefix = url_prefix
+
+    async def put(self, key, content, content_type) -> None:
+        self.put_calls.append((key, content, content_type))
+
+
+    async def delete(self, key) -> None:
+        self.deleted.append(key)
+
+    def url_for(self, key):
+        return f"{self._prefix}{key}" if key else None  
+
+
+class FakeUpload:
+    def __init__(self, content: bytes = b"x", content_type: str = "image/png"):
+        self._content = content
+        self.content_type = content_type
+
+    async def read(self) -> bytes:
+        return self._content
