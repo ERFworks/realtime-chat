@@ -1,6 +1,7 @@
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.user import User
 from app.models.profile import Profile
+from app.models.message import Message
 
 class FakeFriendRepository:
     def __init__(self, friendships=None, users: dict[int, User] | None = None):
@@ -120,3 +121,37 @@ class FakeUpload:
 
     async def read(self) -> bytes:
         return self._content
+
+
+class FakeMessageRepository:
+    def __init__(
+        self, 
+        participants: set[tuple[int, int]] | None = None,
+        messages: list[Message] | None = None
+    ) -> None:
+        self._participants = participants or set()
+        self._messages = list(messages or [])
+
+
+    async def is_participant(self, conversation_id: int, user_id: int) -> bool:
+        return (conversation_id, user_id) in self._participants
+
+        
+    async def create_message(self, conversation_id: int, sender_id: int, body: str) -> Message:
+        message = Message(
+            message_id = len(self._messages) + 1,
+            conversation_id = conversation_id,
+            sender_id = sender_id,
+            body = body
+        )
+        self._messages.append(message)
+        return message
+
+
+    async def list_messages(self, conversation_id: int, before_id = None, limit = 50) -> list[Message]:
+        msgs = [m for m in self._messages if m.conversation_id == conversation_id]
+        if before_id is not None:
+            msgs = [m for m in msgs if m.message_id < before_id]
+
+        msgs.sort(key=lambda m : m.message_id, reverse=True)
+        return msgs[:limit]
