@@ -104,7 +104,7 @@ class FakeProfileRepository:
 
     async def create_profile(self, user_id: int) -> Profile:
         profile = Profile(
-            user_id = len(self._profiles) + 1,
+            user_id = user_id,
             biography = None,
             profile_pic = None,
         )
@@ -113,15 +113,6 @@ class FakeProfileRepository:
 
     async def get_profile_by_user_id(self, user_id: int) -> Profile | None:
         return self._profiles.get(user_id)
-
-
-class FakeSession:
-    async def commit(self):
-        pass
-
-    async def refresh(self, obj):
-        pass
-
 
 
 class FakeFileStorage:
