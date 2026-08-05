@@ -5,14 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.auth import RegisterIn, TokenOut, UserOut, RefreshIn
 from app.db.session import get_db
 from app.models.user import User
-from app.api.deps import get_current_user, get_profile_repo
+from app.api.deps import get_current_user, get_uow
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.exc import IntegrityError
 from app.utils.normalization import normalize
 from jose import JWTError
-from app.repositories.profile import AbstractProfileRepository
+from app.services import auth as auth_service
+from app.services.unit_of_work import AbstractUnitOfWork
 from app.core.security import (
-    hash_password,
     verify_password,
     create_access_token,
     create_refresh_token,
@@ -25,39 +24,18 @@ router = APIRouter(tags=["authentication"])
 @router.post("/register", response_model=UserOut, status_code = status.HTTP_201_CREATED)
 async def register (
     user: RegisterIn, 
-    profile_repo: AbstractProfileRepository = Depends(get_profile_repo),
-    db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.username == user.username))
-
-    if result.scalar_one_or_none():
-        raise HTTPException(
-            status_code = status.HTTP_409_CONFLICT,
-            detail = f"username already exists"
-        )
-
-    new_user = User(
-        username = user.username,
-        password_hash = hash_password(user.password),
-        first_name = user.first_name,
-        last_name = user.last_name
+    uow: AbstractUnitOfWork = Depends(get_uow)
+    
+):
+    result = await auth_service.register_user(
+        uow,
+        username=user.username,
+        password=user.password,
+        first_name=user.first_name,
+        last_name=user.last_name
     )
+    return result
 
-    db.add(new_user)
-
-    try:
-        await db.flush()
-        await profile_repo.create_profile(new_user.user_id)
-        await db.commit()
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Username already exists"
-        )from None
-
-
-    await db.refresh(new_user)
-    return new_user
 
 
 @router.post("/login", response_model=TokenOut, status_code= status.HTTP_200_OK)
