@@ -1,22 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, status
 
 from app.schemas.auth import RegisterIn, TokenOut, UserOut, RefreshIn
-from app.db.session import get_db
 from app.models.user import User
 from app.api.deps import get_current_user, get_uow
 from fastapi.security import OAuth2PasswordRequestForm
-from app.utils.normalization import normalize
-from jose import JWTError
 from app.services import auth as auth_service
 from app.services.unit_of_work import AbstractUnitOfWork
-from app.core.security import (
-    verify_password,
-    create_access_token,
-    create_refresh_token,
-    decode_token
-)
+
 
 
 router = APIRouter(tags=["authentication"])
@@ -37,63 +27,18 @@ async def register (
     return result
 
 
-
-@router.post("/login", response_model=TokenOut, status_code= status.HTTP_200_OK)
+@router.post("/login", response_model=TokenOut)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db)
+    uow: AbstractUnitOfWork = Depends(get_uow)
 ):
+    return await auth_service.authenticate_user(uow, form_data.username, form_data.password)
+    
 
-    username = normalize(form_data.username)
-    result = await db.execute(select(User).where(User.username == username))
+@router.post("/refresh", response_model=TokenOut)
+async def refresh_access_token(payload_in: RefreshIn, uow: AbstractUnitOfWork = Depends(get_uow)):
 
-    user = result.scalar_one_or_none()
-
-    if not user or not verify_password(form_data.password, user.password_hash):
-        raise HTTPException(
-            status_code = status.HTTP_401_UNAUTHORIZED,
-            detail = "Invalid username or password"
-        )
-    payload = {"sub": str(user.user_id)}
-    return TokenOut(
-        access_token = create_access_token(payload),
-        refresh_token = create_refresh_token(payload)
-    )
-
-@router.post("/refresh", response_model=TokenOut, status_code=status.HTTP_200_OK)
-async def refresh_access_token(payload_in: RefreshIn, db: AsyncSession = Depends(get_db)):
-
-    credentials_exc = HTTPException(
-        status_code = status.HTTP_401_UNAUTHORIZED,
-        detail = "Invalid refresh token",
-        headers={"WWW-Authenticate": "Bearer"}
-    )
-    try:
-        payload = decode_token(payload_in.refresh_token)
-    except JWTError:
-        raise credentials_exc from None
-
-    if payload.get("type") != "refresh":
-        raise credentials_exc
-
-    sub = payload.get("sub")
-    if sub is None:
-        raise credentials_exc
-
-    try:
-        user_id = int(sub)
-    except (TypeError, ValueError):
-        raise credentials_exc from None
-
-    result = await db.execute(select(User).where(User.user_id == user_id))
-    if result.scalar_one_or_none() is None:
-        raise credentials_exc
-
-    new_payload = {"sub": str(sub)}
-    return TokenOut(
-        access_token=create_access_token(new_payload),
-        refresh_token=create_refresh_token(new_payload)
-    )
+   return await auth_service.refresh_tokens(uow, payload_in.refresh_token)
 
 
 @router.get("/me", response_model=UserOut)
