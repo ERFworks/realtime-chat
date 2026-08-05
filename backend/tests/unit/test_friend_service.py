@@ -4,38 +4,59 @@ from fastapi import HTTPException
 from app.models.user import User
 from app.models.friendship import FriendshipStatus, Friendship
 from app.services.friend import add_friend
-from tests.unit.fakes import FakeFriendRepository, FakeUserRepository
+from tests.unit.fakes import(
+    FakeUnitOfWork,
+    FakeFriendRepository,
+    FakeUserRepository
+)
 
 async def test_add_friend_rejects_self_request():
-    friend_repo = FakeFriendRepository()
-    user_repo = FakeFriendRepository()
+    uow = FakeUnitOfWork()
 
     with pytest.raises(HTTPException) as exc:
-        await add_friend(db=None, friend_repo=friend_repo, user_repo=user_repo, requester_id=1, addressee_id=1)
+        await add_friend(uow, requester_id=1, addressee_id=1)
 
     assert exc.value.status_code == 400
+    assert uow.committed is False
 
 
 async def test_add_friend_rejects_existing_friendship():
     addressee = User(user_id=2, username="mmd")
 
-    friend_repo = FakeFriendRepository(
-        friendships = [Friendship(friendship_id=1, requester_id=1, addressee_id=2,
-                        status = FriendshipStatus.ACCEPTED)]
+    uow = FakeUnitOfWork()
+    uow.users = FakeUserRepository(users={2: addressee})
+    uow.friends = FakeFriendRepository(
+        friendships=[
+            Friendship(
+                friendship_id=1,
+                requester_id=1,
+                addressee_id=2,
+                status=FriendshipStatus.ACCEPTED,
+            )
+        ]
     )
-    user_repo = FakeUserRepository(users={2: addressee})
-
+    
     with pytest.raises(HTTPException) as exc:
-        await add_friend(db=None, friend_repo=friend_repo, user_repo=user_repo, requester_id=1, addressee_id=2)
+        await add_friend(uow, requester_id=1, addressee_id=2)
 
     assert exc.value.status_code == 409
+    assert uow.committed is False
 
 
 async def test_add_friend_rejects_unknown_user():
-    friend_repo = FakeFriendRepository()
-    user_repo = FakeUserRepository(users={})
+    uow = FakeUnitOfWork()
 
     with pytest.raises(HTTPException) as exc:
-        await add_friend(db=None, friend_repo=friend_repo, user_repo=user_repo, requester_id=1, addressee_id=2)
+        await add_friend(uow, requester_id=1, addressee_id=2)
 
     assert exc.value.status_code == 404
+    assert uow.committed is False
+
+
+async def test_add_friend_creates_pending_request():
+    addresse = User(user_id=2, username="mmd")
+    uow = FakeUnitOfWork()
+    uow.users = FakeUserRepository(users={2: addresse})
+    result = await add_friend(uow, requester_id=1, addressee_id=2)
+    assert result.status == FriendshipStatus.PENDING
+    assert uow.committed is True

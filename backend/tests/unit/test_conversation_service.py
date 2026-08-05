@@ -8,7 +8,11 @@ from app.services.conversation import(
     get_or_create_private_conversation,
     list_conversations
 )
-from tests.unit.fakes import FakeConversationRepository, FakeUserRepository, FakeSession
+from tests.unit.fakes import (
+    FakeUnitOfWork,
+    FakeConversationRepository,
+    FakeUserRepository
+) 
 
 
 def make_conversation(conversation_id: int = 1) -> Conversation:
@@ -28,75 +32,81 @@ def two_users():
 
 
 async def test_rejects_self_conversation():
+    uow = FakeUnitOfWork()
+
     with pytest.raises(HTTPException) as exc:
         await get_or_create_private_conversation(
-            FakeSession(),
             current_user_id=1,
             other_user_id=1,
-            user_repo=FakeUserRepository(),
-            conv_repo=FakeConversationRepository()
+            uow=uow
         )
     assert exc.value.status_code == 400
+    assert uow.committed is False
 
 
 async def test_rejects_unknown_user():
+    uow = FakeUnitOfWork()
+    
     with pytest.raises(HTTPException) as exc:
         await get_or_create_private_conversation(
-            FakeSession(),
             current_user_id=1,
             other_user_id=2,
-            user_repo=FakeUserRepository(users={}),
-            conv_repo=FakeConversationRepository()
+            uow=uow
         )
 
     assert exc.value.status_code == 404
+    assert uow.committed is False
 
 
 async def test_returns_existing_conversation():
     users = two_users()
-    conv_repo = FakeConversationRepository(
+    uow = FakeUnitOfWork()
+    uow.users = FakeUserRepository(users=users)
+    uow.conversations = FakeConversationRepository(
         conversations=[make_conversation(1)],
         participants=[(1,1), (1,2)],
         users=users
     )
+
     result = await get_or_create_private_conversation(
-        FakeSession(),
         current_user_id=1,
         other_user_id=2,
-        user_repo=FakeUserRepository(users=users),
-        conv_repo=conv_repo
+        uow=uow
     )
 
     assert result.conversation_id == 1
     assert {p.user_id for p in result.participants} == {1,2}
+    assert uow.committed is False
 
 
 async def test_creates_new_coversations():
     users = two_users()
-    conv_repo = FakeConversationRepository(users=users)
+    uow = FakeUnitOfWork()
+    uow.users = FakeUserRepository(users=users)
+    uow.conversations = FakeConversationRepository(users=users)
     result = await get_or_create_private_conversation(
-        FakeSession(),
         current_user_id=1,
         other_user_id=2,
-        user_repo=FakeUserRepository(users=users),
-        conv_repo=conv_repo
+        uow=uow
     )
 
     assert result.conversation_id == 1
     assert {p.user_id for p in result.participants} == {1, 2}
+    assert uow.committed is True
 
 
 async def test_list_conversations_returns_user_conversations():
     users = two_users()
-    conv_repo = FakeConversationRepository(
+    uow = FakeUnitOfWork()
+    uow.users = FakeUserRepository(users=users)
+    uow.conversations = FakeConversationRepository(
         conversations=[make_conversation(1)],
         participants=[(1, 1), (1, 2)],
         users=users
     )
     result = await list_conversations(
-        FakeSession(),
         user_id=1,
-        conv_repo=conv_repo
+        uow=uow
     )
     assert len(result) == 1
     assert result[0].conversation_id == 1

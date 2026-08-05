@@ -45,7 +45,7 @@ async def test_register_rejects_duplicate_username(client: AsyncClient):
 
         assert first_response.status_code == 201
         assert second_response.status_code == 409
-        assert second_response.json()["detail"] == "username already exists"
+        assert second_response.json()["detail"] == "Username already exists"
 
         
         
