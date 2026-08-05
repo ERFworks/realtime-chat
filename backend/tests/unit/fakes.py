@@ -5,6 +5,7 @@ from app.models.message import Message
 from app.models.conversation import Conversation, ConversationType
 from app.models.conversationparticipant import ConversationParticipant
 from app.utils.time import utcnow
+from app.services.unit_of_work import AbstractUnitOfWork
 
 class FakeFriendRepository:
     def __init__(self, friendships=None, users: dict[int, User] | None = None):
@@ -18,7 +19,8 @@ class FakeFriendRepository:
             friendship_id = len(self._friendships) + 1,
             requester_id = requester_id,
             addressee_id = addressee_id,
-            status=FriendshipStatus.PENDING
+            status=FriendshipStatus.PENDING,
+            created_at = utcnow()
         )
 
         self._friendships.append(friendship)
@@ -67,11 +69,33 @@ class FakeUserRepository:
     def __init__(self, users: dict[int, User] | None = None):
         self._users = users or {}
 
+
     async def get_user_by_id(self, user_id: int) ->  User | None:
         return self._users.get(user_id)
 
+
+    async def get_user_by_username(self, username: str) -> User | None:
+        return next((u for u in self._users.values() if u.username == username), None)
+
+    
+    async def create_user(self, username, password_hash, first_name, last_name) -> User:
+        new_id = max(self._users, default=0) + 1
+        user = User(
+            user_id = new_id,
+            username=username,
+            password_hash=password_hash,
+            first_name=first_name,
+            last_name=last_name
+        )
+        self._users[new_id] = user
+        return user
+
     async def search_users(self, query: str, exclude_user_id: int, limit: int = 20):
-        return []
+        return [
+            (u, None)
+            for u in self._users.values()
+            if u.user_id != exclude_user_id and query.lower() in u.username.lower()
+        ][:limit]
 
 
 class FakeProfileRepository:
@@ -80,7 +104,7 @@ class FakeProfileRepository:
 
     async def create_profile(self, user_id: int) -> Profile:
         profile = Profile(
-            user_id = len(self._profiles) + 1,
+            user_id = user_id,
             biography = None,
             profile_pic = None,
         )
@@ -89,15 +113,6 @@ class FakeProfileRepository:
 
     async def get_profile_by_user_id(self, user_id: int) -> Profile | None:
         return self._profiles.get(user_id)
-
-
-class FakeSession:
-    async def commit(self):
-        pass
-
-    async def refresh(self, obj):
-        pass
-
 
 
 class FakeFileStorage:
@@ -145,7 +160,8 @@ class FakeMessageRepository:
             message_id = len(self._messages) + 1,
             conversation_id = conversation_id,
             sender_id = sender_id,
-            body = body
+            body = body,
+            created_at = utcnow()
         )
         self._messages.append(message)
         return message
@@ -219,3 +235,22 @@ class FakeConversationRepository:
     async def list_user_conversations(self, user_id: int) -> list[Conversation]:
         ids = {cid for cid, uid in self._participants if uid == user_id}
         return [c for c in self._conversations if c.conversation_id in ids]
+
+
+
+class FakeUnitOfWork(AbstractUnitOfWork):
+    def __init__(self, users=None, friends=None, profiles=None, messages=None, conversations=None):
+        self.users = users or FakeUserRepository()
+        self.friends = friends or FakeFriendRepository()
+        self.profiles = profiles or FakeProfileRepository()
+        self.messages = messages or FakeMessageRepository()
+        self.conversations = conversations or FakeConversationRepository()
+        self.committed = False
+
+
+    async def commit(self):
+        self.committed = True
+
+
+    async def rollback(self):
+        pass

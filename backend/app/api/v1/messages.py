@@ -1,12 +1,12 @@
 from fastapi import APIRouter, status, Depends
+
 from app.schemas.message import MessageOut, MessageCreate
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
-from app.api.deps import get_current_user, get_message_repo, get_conversation_repo
+from app.api.deps import get_current_user, get_uow
 from app.models.user import User
 from app.services import message as msg_service
-from app.repositories.message import AbstractMessageRepository
-from app.repositories.conversation import AbstractConversationRepository
+from app.services.unit_of_work import AbstractUnitOfWork 
+
 
 router = APIRouter(tags=["messages"])
 
@@ -18,15 +18,11 @@ router = APIRouter(tags=["messages"])
 async def send_message(
     conversation_id: int, 
     payload: MessageCreate,
-    msg_repo: AbstractMessageRepository = Depends(get_message_repo), 
     current_user: User = Depends(get_current_user), 
-    db: AsyncSession = Depends(get_db),
-    conv_repo: AbstractConversationRepository = Depends(get_conversation_repo)
+    uow: AbstractUnitOfWork = Depends(get_uow)
 ):
     return await msg_service.send_message(
-        db,
-        msg_repo, 
-        conv_repo,
+        uow,
         conversation_id=conversation_id, 
         sender_id=current_user.user_id, 
         body=payload.body,
@@ -37,12 +33,11 @@ async def get_message(
     conversation_id: int, 
     before_id: int | None = None, 
     limit: int = 50,
-    msg_repo: AbstractMessageRepository = Depends(get_message_repo), 
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    uow: AbstractUnitOfWork = Depends(get_uow)
 ):
     return await msg_service.get_messages(
-        msg_repo,
+        uow,
         conversation_id=conversation_id,
         user_id=current_user.user_id,
         before_id=before_id,
