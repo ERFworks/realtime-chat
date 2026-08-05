@@ -26,9 +26,10 @@ async def get_current_user(
         if payload.get("type") != "access":
             raise credentials_exc
 
-        user_id = int(payload.get("sub"))
-        if user_id is None:
+        sub = payload.get("sub")
+        if sub is None:
             raise credentials_exc
+        user_id = int(sub)
 
     except (JWTError, KeyError, TypeError, ValueError):
         raise credentials_exc from None
