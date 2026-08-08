@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import auth, conversations, messages, friends, profiles, users
 from app.core.config import settings
-from app.utils.file_storage import ensure_bucket_exists
+from app.adapters.file_storage import ensure_bucket_exists
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

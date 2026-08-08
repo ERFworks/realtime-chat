@@ -3,7 +3,7 @@ from fastapi import HTTPException , status
 from app.schemas.friend import FriendOut
 from app.schemas.auth import UserOut
 from app.models.friendship import FriendshipStatus
-from app.utils.file_storage import presigned_url
+from app.adapters.file_storage import AbstractFileStorage
 from app.services.unit_of_work import AbstractUnitOfWork
 
 
@@ -78,7 +78,8 @@ async def respond_to_request(
 
 async def list_my_friends(
     uow: AbstractUnitOfWork,
-    user_id: int
+    user_id: int,
+    storage: AbstractFileStorage
 ) -> list[UserOut]:
 
     async with uow:
@@ -90,7 +91,7 @@ async def list_my_friends(
                 username=user.username,
                 first_name=user.first_name,
                 last_name=user.last_name,
-                profile_pic=presigned_url(user.profile.profile_pic if user.profile else None)
+                profile_pic=storage.url_for(user.profile.profile_pic if user.profile else None)
             )
             for user in friends
         ]

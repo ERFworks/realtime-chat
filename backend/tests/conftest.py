@@ -29,9 +29,9 @@ os.environ["REFRESH_TOKEN_EXPIRE_DAYS"] = "7"
 
 
 from app.db.base import Base  
-from app.db.session import get_db  
 from app.main import app  
-from app.api.deps import get_uow
+from app.api.deps import get_uow, get_db, get_file_storage
+from tests.unit.fakes import FakeFileStorage
 from app.services.unit_of_work import SqlAlchemyUnitOfWork
 
 test_engine = create_async_engine(
@@ -65,6 +65,7 @@ async def reset_database():
 async def client():
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_uow] = override_get_uow
+    app.dependency_overrides[get_file_storage] = lambda: FakeFileStorage()
 
     transport = ASGITransport(app=app)
 
