@@ -9,6 +9,7 @@ from app.services.conversation import(
     list_conversations
 )
 from tests.unit.fakes import (
+    FakeFileStorage,
     FakeUnitOfWork,
     FakeConversationRepository,
     FakeUserRepository
@@ -38,7 +39,8 @@ async def test_rejects_self_conversation():
         await get_or_create_private_conversation(
             current_user_id=1,
             other_user_id=1,
-            uow=uow
+            uow=uow,
+            storage=FakeFileStorage()
         )
     assert exc.value.status_code == 400
     assert uow.committed is False
@@ -51,7 +53,8 @@ async def test_rejects_unknown_user():
         await get_or_create_private_conversation(
             current_user_id=1,
             other_user_id=2,
-            uow=uow
+            uow=uow,
+            storage=FakeFileStorage()
         )
 
     assert exc.value.status_code == 404
@@ -71,7 +74,8 @@ async def test_returns_existing_conversation():
     result = await get_or_create_private_conversation(
         current_user_id=1,
         other_user_id=2,
-        uow=uow
+        uow=uow,
+        storage=FakeFileStorage()
     )
 
     assert result.conversation_id == 1
@@ -87,7 +91,8 @@ async def test_creates_new_coversations():
     result = await get_or_create_private_conversation(
         current_user_id=1,
         other_user_id=2,
-        uow=uow
+        uow=uow,
+        storage=FakeFileStorage()
     )
 
     assert result.conversation_id == 1
@@ -106,7 +111,8 @@ async def test_list_conversations_returns_user_conversations():
     )
     result = await list_conversations(
         user_id=1,
-        uow=uow
+        uow=uow,
+        storage=FakeFileStorage()
     )
     assert len(result) == 1
     assert result[0].conversation_id == 1

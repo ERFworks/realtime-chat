@@ -1,6 +1,6 @@
 from app.models.user import User
 from app.services.user import search_users
-from tests.unit.fakes import FakeUserRepository, FakeUnitOfWork
+from tests.unit.fakes import FakeUserRepository, FakeUnitOfWork, FakeFileStorage
 
 
 async def test_search_excludes_self_and_filters():
@@ -11,7 +11,7 @@ async def test_search_excludes_self_and_filters():
     }
     uow = FakeUnitOfWork()
     uow.users = FakeUserRepository(users)
-    result = await search_users(uow, "erf", current_user_id=1)
+    result = await search_users(uow, "erf", current_user_id=1, storage=FakeFileStorage())
 
     assert {u.username for u in result} == {"erfun"}
     assert all(u.profile_pic is None for u in result)

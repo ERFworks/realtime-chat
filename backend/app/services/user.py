@@ -1,12 +1,13 @@
 from app.schemas.auth import UserOut
 from app.services.unit_of_work import AbstractUnitOfWork
-from app.utils.file_storage import presigned_url
+from app.adapters.file_storage import AbstractFileStorage
 
 
 async def search_users(
     uow: AbstractUnitOfWork,
     query: str,
     current_user_id: int,
+    storage: AbstractFileStorage,
     limit: int = 20
 ) -> list[UserOut]:
 
@@ -18,7 +19,7 @@ async def search_users(
                 username=user.username,
                 first_name=user.first_name,
                 last_name=user.last_name,
-                profile_pic=presigned_url(key)
+                profile_pic=storage.url_for(key)
             )
             for user, key in rows
         ]

@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from functools import lru_cache
 
 from app.db.session import get_db
 from app.core.security import decode_token
@@ -45,6 +46,6 @@ async def get_current_user(
 async def get_uow() -> AbstractUnitOfWork:
     return SqlAlchemyUnitOfWork()
     
-
-async def get_file_storage() -> AbstractFileStorage:
+@lru_cache
+def get_file_storage() -> AbstractFileStorage:
     return MinioFileStorage()

@@ -1,12 +1,12 @@
 from fastapi import APIRouter, status, Depends
 
-from app.db.session import get_db
 from app.models.user import User
-from app.api.deps import get_current_user, get_uow
+from app.api.deps import get_current_user, get_uow, get_file_storage
 from app.schemas.friend import FriendOut
 from app.schemas.auth import UserOut
 from app.services import friend as friend_service
 from app.services.unit_of_work import AbstractUnitOfWork
+from app.adapters.file_storage import AbstractFileStorage
 
 
 
@@ -48,6 +48,7 @@ async def respond_request(
 @router.get("", response_model= list[UserOut])
 async def get_accepted_friends(
     uow: AbstractUnitOfWork = Depends(get_uow),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    storage: AbstractFileStorage = Depends(get_file_storage)
 ):
-    return await friend_service.list_my_friends(uow, current_user.user_id)
+    return await friend_service.list_my_friends(uow, current_user.user_id, storage)
