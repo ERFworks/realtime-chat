@@ -43,8 +43,8 @@ async def get_current_user(
 
     return user
 
-async def get_uow() -> AbstractUnitOfWork:
-    return SqlAlchemyUnitOfWork()
+async def get_uow(db: AsyncSession = Depends(get_db)) -> AbstractUnitOfWork:
+    return SqlAlchemyUnitOfWork(db)
     
 @lru_cache
 def get_file_storage() -> AbstractFileStorage:

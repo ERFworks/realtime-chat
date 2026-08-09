@@ -30,7 +30,7 @@ os.environ["REFRESH_TOKEN_EXPIRE_DAYS"] = "7"
 
 from app.db.base import Base  
 from app.main import app  
-from app.api.deps import get_uow, get_db, get_file_storage
+from app.api.deps import get_db, get_file_storage
 from tests.unit.fakes import FakeFileStorage
 from app.services.unit_of_work import SqlAlchemyUnitOfWork
 
@@ -47,9 +47,6 @@ TestSessionLocal = async_sessionmaker(
     autoflush = False
 )
 
-def override_get_uow():
-    return SqlAlchemyUnitOfWork(session_factory=TestSessionLocal)
-
 async def override_get_db():
     async with TestSessionLocal() as session:
         yield session
@@ -64,7 +61,6 @@ async def reset_database():
 @pytest_asyncio.fixture
 async def client():
     app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_uow] = override_get_uow
     app.dependency_overrides[get_file_storage] = lambda: FakeFileStorage()
 
     transport = ASGITransport(app=app)

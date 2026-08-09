@@ -6,6 +6,8 @@ from app.services import message as msg_service
 from app.websocket.manager import manager
 from app.websocket.auth import authenticate_websocket_token
 from app.services.unit_of_work import SqlAlchemyUnitOfWork
+from app.db.session import AsyncSessionLocal
+
 
 router = APIRouter()
 
@@ -52,16 +54,17 @@ async def _handle_incoming(websocket: WebSocket, user_id: int, data: dict) -> No
         return
 
     try:
-        uow = SqlAlchemyUnitOfWork()
-        message = await msg_service.send_message(
-            uow,
-            conversation_id=conversation_id,
-            sender_id=user_id,
-            body=validated.body
-        )
-        async with uow:
-            participants = await uow.conversations.get_participants(conversation_id)
-            participant_ids = [p.user_id for p in participants]
+        async with AsyncSessionLocal() as session:
+            uow = SqlAlchemyUnitOfWork(session)
+            message = await msg_service.send_message(
+                uow,
+                conversation_id=conversation_id,
+                sender_id=user_id,
+                body=validated.body
+            )
+            async with uow:
+                participants = await uow.conversations.get_participants(conversation_id)
+                participant_ids = [p.user_id for p in participants]
             
     except HTTPException as exc:
         await websocket.send_json({"type": "error", "detail": exc.detail})

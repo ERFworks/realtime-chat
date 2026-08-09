@@ -40,12 +40,11 @@ class AbstractUnitOfWork(ABC):
 
 
 class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession] = AsyncSessionLocal):
-        self._session_factory = session_factory
+    def __init__(self, session: AsyncSession):
+        self.session = session
 
 
     async def __aenter__(self) -> "SqlAlchemyUnitOfWork":
-        self.session = self._session_factory()
         self.users = SqlAlchemyUserRepository(self.session)
         self.friends = SqlAlchemyFriendRepository(self.session)
         self.profiles = SqlAlchemyProfileRepository(self.session)
@@ -56,7 +55,6 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
 
     async def __aexit__(self, exc_type, exc, tb):
         await super().__aexit__(exc_type, exc, tb)
-        await self.session.close()
 
 
     async def commit(self):
