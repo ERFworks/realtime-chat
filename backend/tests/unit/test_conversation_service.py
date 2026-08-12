@@ -123,6 +123,7 @@ async def test_race_returns_existing_conversations(monkeypatch):
     users = two_users()
     uow = FakeUnitOfWork()
     uow.users = FakeUserRepository(users=users)
+    storage = FakeFileStorage()
     repo = FakeConversationRepository(
         conversations=[make_conversation(1)],
         participants=[(1, 1), (1, 2)],
@@ -146,6 +147,7 @@ async def test_race_returns_existing_conversations(monkeypatch):
         current_user_id=1,
         other_user_id=2,
         uow=uow,
+        storage=storage
     )
 
     assert result.conversation_id == 1

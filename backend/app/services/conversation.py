@@ -6,7 +6,7 @@ from app.models.conversation import Conversation
 from app.services.unit_of_work import AbstractUnitOfWork
 from app.schemas.conversation import ConversationOut, ParticipantOut
 from app.models.user import User
-from backend.app.adapters.file_storage import AbstractFileStorage
+from app.adapters.file_storage import AbstractFileStorage
 
 
 
@@ -70,11 +70,11 @@ async def get_or_create_private_conversation(
 
             conv = await uow.conversations.get_conversation(existing_id)
             participants = await uow.conversations.get_participants_with_profiles(existing_id)
-            return _to_out(conv, participants)
+            return _to_out(conv, participants, storage)
 
         await uow.commit()
         participants = await uow.conversations.get_participants_with_profiles(conv.conversation_id)
-        return _to_out(conv, participants)
+        return _to_out(conv, participants, storage)
 
 
 async def list_conversations(
