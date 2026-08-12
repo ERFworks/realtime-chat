@@ -1,11 +1,12 @@
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
+
 
 from app.models.conversation import Conversation
 from app.services.unit_of_work import AbstractUnitOfWork
 from app.schemas.conversation import ConversationOut, ParticipantOut
-from app.adapters.file_storage import AbstractFileStorage
-from app.models.profile import Profile
 from app.models.user import User
+from backend.app.adapters.file_storage import AbstractFileStorage
 
 
 
@@ -41,6 +42,7 @@ async def get_or_create_private_conversation(
             status_code = status.HTTP_400_BAD_REQUEST,
             detail = "Cannot create a conversation with yourself"
         ) 
+    
     async with uow:
         if not await uow.users.get_user_by_id(other_user_id):
             raise HTTPException(
@@ -58,10 +60,21 @@ async def get_or_create_private_conversation(
             participants = await uow.conversations.get_participants_with_profiles(exiting_id) 
             return _to_out(conv, participants, storage)
 
-        conv = await uow.conversations.create_private_conversation([current_user_id, other_user_id])
+        try:
+            async with uow.savepoint():
+                conv = await uow.conversations.create_private_conversation([current_user_id, other_user_id])
+        except IntegrityError:
+            existing_id = await uow.conversations.get_private_conversation_id(current_user_id, other_user_id)
+            if existing_id is None:
+                raise
+
+            conv = await uow.conversations.get_conversation(existing_id)
+            participants = await uow.conversations.get_participants_with_profiles(existing_id)
+            return _to_out(conv, participants)
+
         await uow.commit()
-        participants = await uow.conversations.get_participants_with_profiles(conv.conversation_id)  
-        return _to_out(conv, participants, storage)
+        participants = await uow.conversations.get_participants_with_profiles(conv.conversation_id)
+        return _to_out(conv, participants)
 
 
 async def list_conversations(

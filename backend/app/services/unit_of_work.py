@@ -39,6 +39,9 @@ class AbstractUnitOfWork(ABC):
     async def rollback(self): ...
 
 
+    @abstractmethod
+    def savepoint(self):...
+
 class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -63,3 +66,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
 
     async def rollback(self):
         await self.session.rollback()
+
+
+    def savepoint(self):
+        return self.session.begin_nested()

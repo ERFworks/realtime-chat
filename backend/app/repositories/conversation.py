@@ -1,4 +1,4 @@
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Protocol
 
@@ -27,21 +27,16 @@ class SqlAlchemyConversationRepository:
         user_a: int,
         user_b: int
     ) -> int | None:
-        stmt = (
-            select(ConversationParticipant.conversation_id)
-            .join(
-                Conversation,
-                Conversation.conversation_id == ConversationParticipant.conversation_id
-            )
-            .where(
+        low, high = sorted((user_a, user_b))
+        result = await self.session.execute(
+            select(Conversation.conversation_id).where(
                 Conversation.conversation_type == ConversationType.PRIVATE,
-                ConversationParticipant.user_id.in_([user_a, user_b]),
+                Conversation.user_a_id == low,
+                Conversation.user_b_id == high
             )
-            .group_by(ConversationParticipant.conversation_id)
-            .having(func.count(func.distinct(ConversationParticipant.user_id)) == 2)
         )
-        result = await self.session.execute(stmt)
-        return result.scalars().first()
+        return result.scalar_one_or_none()
+
 
 
     async def get_conversation(self, conversation_id: int) -> Conversation | None:
@@ -55,7 +50,12 @@ class SqlAlchemyConversationRepository:
         self,
         user_ids: list[int]
     ) -> Conversation:
-        conv = Conversation(conversation_type = ConversationType.PRIVATE)
+        low, high = sorted(user_ids)
+        conv = Conversation(
+            conversation_type = ConversationType.PRIVATE,
+            user_a_id = low,
+            user_b_id = high
+        )
         self.session.add(conv)
         await self.session.flush()
         self.session.add_all(

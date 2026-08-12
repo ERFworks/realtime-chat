@@ -1,3 +1,6 @@
+from sqlalchemy.exc import IntegrityError
+from contextlib import asynccontextmanager
+
 from app.models.friendship import Friendship, FriendshipStatus
 from app.models.user import User
 from app.models.profile import Profile
@@ -207,9 +210,19 @@ class FakeConversationRepository:
 
     
     async def create_private_conversation(self, user_ids: list[int]) -> Conversation:
+        if len(user_ids) == 2 and await self.get_private_conversation_id(*user_ids) is not None:
+            raise IntegrityError(
+                "INSERT INTO conversations ...",
+                {},
+                Exception('duplicate key value violates unique constraint "uq_conversations_private_pair"'),
+            )
+        low, high = sorted(user_ids)
+
         conv = Conversation(
             conversation_id = len(self._conversations) + 1,
             conversation_type = ConversationType.PRIVATE,
+            user_a_id = low,
+            user_b_id = high,
             created_at = utcnow(),
             updated_at = utcnow()
         )
@@ -254,3 +267,7 @@ class FakeUnitOfWork(AbstractUnitOfWork):
 
     async def rollback(self):
         pass
+
+    @asynccontextmanager
+    async def savepoint(self):
+        yield

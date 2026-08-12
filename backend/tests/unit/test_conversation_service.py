@@ -118,3 +118,36 @@ async def test_list_conversations_returns_user_conversations():
     assert result[0].conversation_id == 1
 
 
+
+async def test_race_returns_existing_conversations(monkeypatch):
+    users = two_users()
+    uow = FakeUnitOfWork()
+    uow.users = FakeUserRepository(users=users)
+    repo = FakeConversationRepository(
+        conversations=[make_conversation(1)],
+        participants=[(1, 1), (1, 2)],
+        users=users
+    )
+
+    real_lookup = repo.get_private_conversation_id
+    calls = {"n": 0}
+
+    async def stale_then_real(user_a , user_b):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return None
+
+        return await real_lookup(user_a, user_b)
+
+    monkeypatch.setattr(repo, "get_private_conversation_id", stale_then_real)
+    uow.conversations = repo
+
+    result = await get_or_create_private_conversation(
+        current_user_id=1,
+        other_user_id=2,
+        uow=uow,
+    )
+
+    assert result.conversation_id == 1
+    assert {p.user_id for p in result.participants} == {1, 2}
+    assert uow.committed is False

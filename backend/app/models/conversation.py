@@ -3,7 +3,7 @@ import enum
 from app.utils.time import utcnow
 from app.db.base_class import Base
 from datetime import datetime
-from sqlalchemy import DateTime, Enum
+from sqlalchemy import DateTime, Enum, UniqueConstraint, CheckConstraint, ForeignKey
 from sqlalchemy.orm import Mapped ,mapped_column
 
 
@@ -13,12 +13,30 @@ class ConversationType(str, enum.Enum):
 class Conversation(Base):
     __tablename__ = "conversations"
 
+    __table_args__ = (
+        UniqueConstraint("user_a_id", "user_b_id", name="uq_conversations_private_pair"),
+        CheckConstraint(
+            "user_a_id IS NULL OR user_a_id < user_b_id",
+            name="ck_conversations_pair_order"
+        )
+    )
+
     conversation_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     
     conversation_type: Mapped[ConversationType] = mapped_column(
         Enum(ConversationType, name= "conversation_type"),
         default = ConversationType.PRIVATE,
         nullable = False
+    )
+
+    user_a_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=True
+    )
+
+    user_b_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=True
     )
 
     created_at: Mapped[datetime] = mapped_column(
