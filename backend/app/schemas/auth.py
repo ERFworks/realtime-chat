@@ -40,3 +40,7 @@ class TokenOut(BaseModel):
 
 class RefreshIn(BaseModel):
     refresh_token: str
+
+
+class LogoutIn(BaseModel):
+    refresh_token: str
