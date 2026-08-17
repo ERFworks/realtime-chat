@@ -8,6 +8,8 @@ from app.models.message import Message
 from app.models.conversation import Conversation, ConversationType
 from app.models.conversationparticipant import ConversationParticipant
 from app.utils.time import utcnow
+from app.core.security import decode_token, hash_token
+from app.services.token_store import AbstractTokenStore, RotationOutcome
 from app.services.unit_of_work import AbstractUnitOfWork
 
 class FakeFriendRepository:
@@ -249,6 +251,61 @@ class FakeConversationRepository:
         ids = {cid for cid, uid in self._participants if uid == user_id}
         return [c for c in self._conversations if c.conversation_id in ids]
 
+
+
+class FakeTokenStore(AbstractTokenStore):
+    """In-memory stand-in for RedisTokenStore with the same semantics."""
+    def __init__(self):
+        self._active: dict[str, int] = {}       # token hash -> user_id
+        self._family_head: dict[str, str] = {}  # family id -> head token hash
+        self._used: dict[str, set[str]] = {}    # family id -> rotated-out hashes
+        self._denied: set[str] = set()          # revoked access token hashes
+
+    async def store_refresh_token(self, user_id: int, token: str, family_id: str, ttl_seconds: int) -> None:
+        token_hash = hash_token(token)
+        self._active[token_hash] = user_id
+        self._family_head[family_id] = token_hash
+
+    async def rotate_refresh_token(
+        self, user_id: int, old_token: str, new_token: str, family_id: str, ttl_seconds: int
+    ) -> RotationOutcome:
+        old_hash, new_hash = hash_token(old_token), hash_token(new_token)
+        if self._active.get(old_hash) == user_id:
+            del self._active[old_hash]
+            self._used.setdefault(family_id, set()).add(old_hash)
+            self._active[new_hash] = user_id
+            self._family_head[family_id] = new_hash
+            return RotationOutcome.ROTATED
+        if old_hash in self._used.get(family_id, set()):
+            head = self._family_head.pop(family_id, None)
+            if head is not None:
+                self._active.pop(head, None)
+            self._used.pop(family_id, None)
+            return RotationOutcome.REUSE_DETECTED
+        return RotationOutcome.INVALID
+
+    async def is_refresh_token_active(self, user_id: int, token: str) -> bool:
+        return self._active.get(hash_token(token)) == user_id
+
+    async def revoke_refresh_token(self, user_id: int, token: str, family_id: str, ttl_seconds: int) -> None:
+        token_hash = hash_token(token)
+        if self._active.get(token_hash) != user_id:
+            return
+        del self._active[token_hash]
+        self._used.setdefault(family_id, set()).add(token_hash)
+        if self._family_head.get(family_id) == token_hash:
+            del self._family_head[family_id]
+
+    async def revoke_access_token(self, token: str) -> None:
+        try:
+            payload = decode_token(token)
+        except Exception:
+            return
+        if payload.get("type") == "access":
+            self._denied.add(hash_token(token))
+
+    async def is_access_token_revoked(self, token: str) -> bool:
+        return hash_token(token) in self._denied
 
 
 class FakeUnitOfWork(AbstractUnitOfWork):

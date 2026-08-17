@@ -199,3 +199,96 @@ async def test_login_is_case_insensitive(client: AsyncClient):
     await register_user(client, username="ERfan")
     response = await login_user(client, username="  ERfan  ")
     assert response.status_code == 200
+
+
+
+async def _login_tokens(client: AsyncClient) -> dict:
+    await register_user(client)
+    login_response = await login_user(client)
+    assert login_response.status_code == 200
+    return login_response.json()
+
+
+@pytest.mark.asyncio
+async def test_refresh_rotates_token(client: AsyncClient):
+    tokens = await _login_tokens(client)
+
+    refresh_response = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": tokens["refresh_token"]},
+    )
+    assert refresh_response.status_code == 200
+
+    new_tokens = refresh_response.json()
+    assert new_tokens["refresh_token"] != tokens["refresh_token"]
+    assert new_tokens["access_token"]
+
+    # the old refresh token was invalidated by the rotation
+    replay_response = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": tokens["refresh_token"]},
+    )
+    assert replay_response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_refresh_reuse_detection_revokes_family(client: AsyncClient):
+    tokens = await _login_tokens(client)
+
+    first = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": tokens["refresh_token"]},
+    )
+    assert first.status_code == 200
+    newest_refresh = first.json()["refresh_token"]
+
+    # replaying the rotated-out token is reuse -> whole family revoked
+    replay = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": tokens["refresh_token"]},
+    )
+    assert replay.status_code == 401
+
+    # even the newest token of the family is now dead
+    newest = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": newest_refresh},
+    )
+    assert newest.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_logout_revokes_refresh_and_access_tokens(client: AsyncClient):
+    tokens = await _login_tokens(client)
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+
+    logout_response = await client.post(
+        "/api/v1/auth/logout",
+        json={"refresh_token": tokens["refresh_token"]},
+        headers=headers,
+    )
+    assert logout_response.status_code == 204
+
+    # refresh with the logged-out token fails
+    refresh_response = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": tokens["refresh_token"]},
+    )
+    assert refresh_response.status_code == 401
+
+    # the access token was denylisted too
+    me_response = await client.get("/api/v1/auth/me", headers=headers)
+    assert me_response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_logout_requires_authentication(client: AsyncClient):
+    await register_user(client)
+    login_response = await login_user(client)
+    tokens = login_response.json()
+
+    response = await client.post(
+        "/api/v1/auth/logout",
+        json={"refresh_token": tokens["refresh_token"]},
+    )
+    assert response.status_code == 401
