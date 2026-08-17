@@ -23,6 +23,15 @@ services:
     tmpfs:
         /var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   minio:
     image: minio/minio
     command: server /data --console-address ":9001"
@@ -46,10 +55,12 @@ services:
       - ./app:/app/app
     environment:
       SQLALCHEMY_DATABASE_URL: postgresql+asyncpg://chat:chat@db:5432/chat
+      REDIS_URL: redis://redis:6379/0
       MINIO_ENDPOINT: minio:9000
       MINIO_PUBLIC_ENDPOINT: localhost:9000
     depends_on:
       db: { condition: service_healthy }
+      redis: { condition: service_healthy }
       minio: { condition: service_started }
 
 volumes:

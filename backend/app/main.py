@@ -9,11 +9,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1 import auth, conversations, messages, friends, profiles, users
 from app.core.config import settings
 from app.adapters.file_storage import ensure_bucket_exists
+from app.db.redis import redis_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await run_in_threadpool(ensure_bucket_exists)
     yield
+    await redis_client.aclose()
 
 app = FastAPI(title="Realtime Chat App", lifespan=lifespan)
 
