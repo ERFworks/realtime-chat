@@ -26,6 +26,7 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         pass
 
+    await manager.disconnect_all()
     await redis_client.aclose()
 
 app = FastAPI(title="Realtime Chat App", lifespan=lifespan)

@@ -44,6 +44,7 @@ class ConnectionManager:
             await self.redis.publish(self.broadcast_channel, payload)
         except RedisError:
             logger.exception(
+                "Redis publish failed (channel=%s); message delivered locally only",
                 self.broadcast_channel,
             )
 
@@ -120,6 +121,21 @@ class ConnectionManager:
 
             await asyncio.sleep(retry_delay)
             retry_delay = min(retry_delay * 2, 30.0)
+
+
+    async def disconnect_all(self) -> None:
+        connections = [
+            websocket
+            for websockets in self.active_connections.values()
+            for websocket in set(websockets)
+        ]
+        for websocket in connections:
+            try:
+                await websocket.close(code=1001)
+            except Exception:
+                pass
+
+        self.active_connections.clear()
 
 
 manager = ConnectionManager()

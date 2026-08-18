@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, status
 from pydantic import ValidationError
 
@@ -23,17 +24,31 @@ async def websocket_endpont(websocket: WebSocket, token: str | None = None):
     try: 
         while True:
             try:
-                data = await websocket.receive_json()
-            except (ValueError, TypeError):
-                await websocket.send_json(
-                    {"type": "error", "detail": "Invalid JSON"}
+                data = await asyncio.wait_for(
+                    websocket.receive_json(),
+                    timeout=20
                 )
+            except asyncio.TimeoutError:
+                try:
+                    await websocket.send_json({"type": "ping"})
+                    data = await asyncio.wait_for(
+                        websocket.receive_json(), timeout=10
+                    )
+                except Exception:
+                    break
+                if isinstance(data, dict) and data.get("type") == "pong":
+                    continue
+            except (ValueError, TypeError):
+                await websocket.send_json({"type": "error", "detail": "Invalid JSON"})
                 continue
+
             await _handle_incoming(websocket, user_id, data)
+    
     except WebSocketDisconnect:
         pass
     finally:
         manager.disconnect(user_id, websocket)
+
 
 async def _handle_incoming(websocket: WebSocket, user_id: int, data: dict) -> None:
     conversation_id = data.get("conversation_id")
