@@ -1,4 +1,7 @@
+import asyncio
+
 from app.websocket import router as ws_router
+from app.websocket.manager import manager
 
 from contextlib import asynccontextmanager
 from starlette.concurrency import run_in_threadpool
@@ -14,7 +17,15 @@ from app.db.redis import redis_client
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await run_in_threadpool(ensure_bucket_exists)
+    listener_task = asyncio.create_task(manager.start_listener())
     yield
+
+    listener_task.cancel()
+    try:
+        await listener_task
+    except asyncio.CancelledError:
+        pass
+
     await redis_client.aclose()
 
 app = FastAPI(title="Realtime Chat App", lifespan=lifespan)
