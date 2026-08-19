@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy import select
@@ -11,6 +11,7 @@ from app.models.user import User
 from app.services.unit_of_work import AbstractUnitOfWork, SqlAlchemyUnitOfWork
 from app.adapters.file_storage import AbstractFileStorage, MinioFileStorage
 from app.services.token_store import AbstractTokenStore, RedisTokenStore
+from app.services.rate_limiter import AbstractRateLimiter, RedisRateLimiter
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -58,3 +59,38 @@ async def get_uow(db: AsyncSession = Depends(get_db)) -> AbstractUnitOfWork:
 @lru_cache
 def get_file_storage() -> AbstractFileStorage:
     return MinioFileStorage()
+
+@lru_cache
+def get_rate_limiter() -> AbstractRateLimiter:
+    return RedisRateLimiter()
+
+
+def client_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client is not None:
+        return request.client.host
+    return "unknown"
+
+
+def rate_limit(
+    scope: str,
+    limit: int,
+    window_seconds: int,
+    *,
+    detail: str = "Too many requests. Please try again later.",
+):
+
+    async def _enforce(
+        request: Request,
+        rate_limiter: AbstractRateLimiter = Depends(get_rate_limiter),
+    ) -> None:
+        key = f"rate_limit:{scope}:{client_ip(request)}"
+        if await rate_limiter.is_rate_limited(key, limit, window_seconds):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=detail,
+            )
+
+    return _enforce

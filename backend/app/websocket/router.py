@@ -2,6 +2,7 @@ import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, status
 from pydantic import ValidationError
 
+from app.api.deps import get_rate_limiter
 from app.schemas.message import MessageCreate
 from app.services import message as msg_service
 from app.websocket.manager import manager
@@ -14,6 +15,14 @@ router = APIRouter()
 
 @router.websocket("/ws")
 async def websocket_endpont(websocket: WebSocket, token: str | None = None):
+    rate_limiter = get_rate_limiter()
+    client_host = websocket.client.host if websocket.client else "unknown"
+    if await rate_limiter.is_rate_limited(
+        f"rate_limit:ws_connect:{client_host}", limit=10, window_seconds=60
+    ):
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
     user_id = authenticate_websocket_token(token)
     if user_id is None:
         await websocket.close(code = status.WS_1008_POLICY_VIOLATION)
@@ -51,6 +60,15 @@ async def websocket_endpont(websocket: WebSocket, token: str | None = None):
 
 
 async def _handle_incoming(websocket: WebSocket, user_id: int, data: dict) -> None:
+    rate_limiter = get_rate_limiter()
+    if await rate_limiter.is_rate_limited(
+        f"rate_limit:ws_message:{user_id}", limit=30, window_seconds=60
+    ):
+        await websocket.send_json(
+            {"type": "error", "detail": "Too many messages. Please slow down."}
+        )
+        return
+
     conversation_id = data.get("conversation_id")
     body = data.get("body")
 
