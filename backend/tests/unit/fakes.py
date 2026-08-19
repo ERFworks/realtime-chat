@@ -11,6 +11,7 @@ from app.utils.time import utcnow
 from app.core.security import decode_token, hash_token
 from app.services.token_store import AbstractTokenStore, RotationOutcome
 from app.services.unit_of_work import AbstractUnitOfWork
+from app.services.rate_limiter import AbstractRateLimiter
 
 class FakeFriendRepository:
     def __init__(self, friendships=None, users: dict[int, User] | None = None):
@@ -306,6 +307,15 @@ class FakeTokenStore(AbstractTokenStore):
 
     async def is_access_token_revoked(self, token: str) -> bool:
         return hash_token(token) in self._denied
+
+
+class FakeRateLimiter(AbstractRateLimiter):
+    def __init__(self) -> None:
+        self._counts: dict[str, int] = {}
+
+    async def is_rate_limited(self, key: str, limit: int, window_seconds: int) -> bool:
+        self._counts[key] = self._counts.get(key, 0) + 1
+        return self._counts[key] > limit
 
 
 class FakeUnitOfWork(AbstractUnitOfWork):
