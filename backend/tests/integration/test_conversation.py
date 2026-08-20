@@ -1,5 +1,5 @@
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from tests.conftest import register_user, login_user, get_auth_headers
 
