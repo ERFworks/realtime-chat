@@ -1,21 +1,25 @@
 import asyncio
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, status
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, status, Depends
 from pydantic import ValidationError
 
-from app.api.deps import get_rate_limiter
+from app.api.deps import get_rate_limiter, get_uow
 from app.schemas.message import MessageCreate
 from app.services import message as msg_service
 from app.websocket.manager import manager
 from app.websocket.auth import authenticate_websocket_token
-from app.services.unit_of_work import SqlAlchemyUnitOfWork
-from app.db.session import AsyncSessionLocal
+from app.services.unit_of_work import AbstractUnitOfWork
+from app.services.rate_limiter import AbstractRateLimiter
 
 
 router = APIRouter()
 
 @router.websocket("/ws")
-async def websocket_endpont(websocket: WebSocket, token: str | None = None):
-    rate_limiter = get_rate_limiter()
+async def websocket_endpont(
+    websocket: WebSocket, 
+    token: str | None = None,
+    rate_limiter: AbstractRateLimiter = Depends(get_rate_limiter),
+    uow: AbstractUnitOfWork = Depends(get_uow)
+):
     client_host = websocket.client.host if websocket.client else "unknown"
     if await rate_limiter.is_rate_limited(
         f"rate_limit:ws_connect:{client_host}", limit=10, window_seconds=60
@@ -51,7 +55,7 @@ async def websocket_endpont(websocket: WebSocket, token: str | None = None):
                 await websocket.send_json({"type": "error", "detail": "Invalid JSON"})
                 continue
 
-            await _handle_incoming(websocket, user_id, data)
+            await _handle_incoming(websocket, user_id, data, rate_limiter, uow)
     
     except WebSocketDisconnect:
         pass
@@ -59,8 +63,13 @@ async def websocket_endpont(websocket: WebSocket, token: str | None = None):
         manager.disconnect(user_id, websocket)
 
 
-async def _handle_incoming(websocket: WebSocket, user_id: int, data: dict) -> None:
-    rate_limiter = get_rate_limiter()
+async def _handle_incoming(
+        websocket: WebSocket, 
+        user_id: int, 
+        data: dict,
+        rate_limiter: AbstractRateLimiter,
+        uow: AbstractUnitOfWork
+) -> None:
     if await rate_limiter.is_rate_limited(
         f"rate_limit:ws_message:{user_id}", limit=30, window_seconds=60
     ):
@@ -87,8 +96,6 @@ async def _handle_incoming(websocket: WebSocket, user_id: int, data: dict) -> No
         return
 
     try:
-        async with AsyncSessionLocal() as session:
-            uow = SqlAlchemyUnitOfWork(session)
             message = await msg_service.send_message(
                 uow,
                 conversation_id=conversation_id,

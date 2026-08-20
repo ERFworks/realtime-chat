@@ -318,6 +318,36 @@ class FakeRateLimiter(AbstractRateLimiter):
         return self._counts[key] > limit
 
 
+class FakeRedis:
+    def __init__(self) -> None:
+        self.published: list[tuple[str, str]] = []
+
+    async def publish(self, channel: str, payload: str) -> int:
+        self.published.append((channel, payload))
+        return 1
+
+
+class FakeWebSocket:
+    def __init__(self, should_fail_on_send: bool = False):
+        self.sent_messages = []
+        self.is_accepted = False
+        self.is_closed = False
+        self.close_code = None
+        self.should_fail_on_send = should_fail_on_send
+
+    async def accept(self):
+        self.is_accepted = True
+
+    async def send_json(self, message: dict):
+        if self.should_fail_on_send:
+            raise RuntimeError("Simulated broken connection!")
+        self.sent_messages.append(message)
+
+    async def close(self, code: int = 1001):
+        self.is_closed = True
+        self.close_code = code
+
+
 class FakeUnitOfWork(AbstractUnitOfWork):
     def __init__(self, users=None, friends=None, profiles=None, messages=None, conversations=None):
         self.users = users or FakeUserRepository()

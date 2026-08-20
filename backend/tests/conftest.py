@@ -27,6 +27,8 @@ os.environ["ALGORITHM"] = "HS256"
 os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "15"
 os.environ["REFRESH_TOKEN_EXPIRE_DAYS"] = "7"
 
+from fastapi.testclient import TestClient
+import asyncio
 
 from app.db.base import Base  
 from app.main import app  
@@ -74,6 +76,29 @@ async def client():
         base_url="http://test",
     ) as async_client:
         yield async_client
+
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def sync_client():
+    async def clean_db():
+        async with test_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+            await conn.run_sync(Base.metadata.create_all)
+    asyncio.run(clean_db())
+
+    token_store = FakeTokenStore()
+
+    rate_limiter = FakeRateLimiter()
+    app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_file_storage] = lambda: FakeFileStorage()
+    app.dependency_overrides[get_token_store] = lambda: token_store
+    app.dependency_overrides[get_rate_limiter] = lambda: rate_limiter
+
+    test_client = TestClient(app)
+    yield test_client
+    test_client.close()
 
     app.dependency_overrides.clear()
 

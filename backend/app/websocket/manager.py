@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 class ConnectionManager:
 
-    def __init__(self) -> None:
+    def __init__(self, redis=None) -> None:
         self.active_connections: dict[int, set[WebSocket]] = {}
-        self.redis = redis_client
+        self.redis = redis if redis is not None else redis_client
         self.broadcast_channel = "websocket:broadcast"
         self.node_id = uuid.uuid4().hex
 
