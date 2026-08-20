@@ -23,6 +23,33 @@ def test_ws_rejects_invalid_token(sync_client):
     assert exc.value.code == 1008
 
 
+def test_ws_rejects_revoked_access_token(sync_client):
+    sync_client.post(
+        "/api/v1/auth/register",
+        json={"username": "ali", "password": "password123", "first_name": "ali"},
+    )
+    tokens = sync_client.post(
+        "/api/v1/auth/login",
+        data={"username": "ali", "password": "password123"},
+    ).json()
+    token = tokens["access_token"]
+
+    logout_response = sync_client.post(
+        "/api/v1/auth/logout",
+        json={"refresh_token": tokens["refresh_token"]},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert logout_response.status_code == 204
+
+    with (
+        pytest.raises(WebSocketDisconnect) as exc,
+        sync_client.websocket_connect(f"/api/v1/ws?token={token}") as ws,
+    ):
+        ws.receive_json()
+
+    assert exc.value.code == 1008
+
+
 def test_ws_broadcast_message_to_other_user(sync_client):
     token_a = _register_and_login(sync_client, "ali")
     token_b = _register_and_login(sync_client, "mmd")

@@ -10,10 +10,11 @@ from fastapi import (
 )
 from pydantic import ValidationError
 
-from app.api.deps import get_rate_limiter, get_uow
+from app.api.deps import get_rate_limiter, get_token_store, get_uow
 from app.schemas.message import MessageCreate
 from app.services import message as msg_service
 from app.services.rate_limiter import AbstractRateLimiter
+from app.services.token_store import AbstractTokenStore
 from app.services.unit_of_work import AbstractUnitOfWork
 from app.websocket.auth import authenticate_websocket_token
 from app.websocket.manager import manager
@@ -25,6 +26,7 @@ async def websocket_endpont(
     websocket: WebSocket, 
     token: str | None = None,
     rate_limiter: AbstractRateLimiter = Depends(get_rate_limiter),
+    token_store: AbstractTokenStore = Depends(get_token_store),
     uow: AbstractUnitOfWork = Depends(get_uow)
 ):
     client_host = websocket.client.host if websocket.client else "unknown"
@@ -35,7 +37,7 @@ async def websocket_endpont(
         return
 
     user_id = authenticate_websocket_token(token)
-    if user_id is None:
+    if user_id is None or await token_store.is_access_token_revoked(token):
         await websocket.close(code = status.WS_1008_POLICY_VIOLATION)
         return
 
