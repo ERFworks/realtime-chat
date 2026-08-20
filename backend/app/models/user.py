@@ -1,13 +1,17 @@
 import uuid
-
 from datetime import datetime
-from app.utils.time import utcnow
-from app.db.base_class import Base
-from sqlalchemy import String, Integer, DateTime
-from sqlalchemy.orm import Mapped ,mapped_column, relationship
+from typing import TYPE_CHECKING
+
+from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.db.base_class import Base
+from app.utils.time import utcnow
 
+if TYPE_CHECKING:
+    from app.models.friendship import Friendship
+    from app.models.profile import Profile
 
 
 class User(Base):

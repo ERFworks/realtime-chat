@@ -1,13 +1,20 @@
 import uuid
+
 import pytest
 from fastapi import HTTPException
-from app.models.profile import Profile
-from app.services.profile import get_my_profile, update_bio, set_profile_picture
-from tests.unit.fakes import FakeProfileRepository, FakeFileStorage, FakeUpload, FakeUnitOfWork
+
 from app.core.config import settings
+from app.models.profile import Profile
+from app.services.profile import get_my_profile, set_profile_picture, update_bio
+from tests.unit.fakes import (
+    FakeFileStorage,
+    FakeProfileRepository,
+    FakeUnitOfWork,
+    FakeUpload,
+)
 
 
-def get_profile(profile_id: int = 1, user_id: int = 1, biography: str = "salam", profile_pic: str = None) -> Profile:
+def get_profile(profile_id: int = 1, user_id: int = 1, biography: str = "salam", profile_pic: str | None = None) -> Profile:
     return Profile(
             profile_id = profile_id,
             user_id = user_id,
@@ -56,7 +63,7 @@ async def test_set_profile_picture_replace_old():
     )
 
     assert profile.profile_pic.startswith(f"profile_pics/{guid}/")
-    assert profile.profile_pic.endswith(f".png")
+    assert profile.profile_pic.endswith(".png")
     assert storage.deleted == ["old/key.png"]
     assert result.profile_pic == storage.url_for(profile.profile_pic)
     assert uow.committed is True

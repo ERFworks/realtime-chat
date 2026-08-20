@@ -1,10 +1,11 @@
 import enum
-
-from app.utils.time import utcnow
-from app.db.base_class import Base
 from datetime import datetime
-from sqlalchemy import DateTime, Enum, UniqueConstraint, CheckConstraint, ForeignKey
-from sqlalchemy.orm import Mapped ,mapped_column
+
+from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db.base_class import Base
+from app.utils.time import utcnow
 
 
 class ConversationType(str, enum.Enum):

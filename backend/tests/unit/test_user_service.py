@@ -1,6 +1,6 @@
 from app.models.user import User
 from app.services.user import search_users
-from tests.unit.fakes import FakeUserRepository, FakeUnitOfWork, FakeFileStorage
+from tests.unit.fakes import FakeFileStorage, FakeUnitOfWork, FakeUserRepository
 
 
 async def test_search_excludes_self_and_filters():

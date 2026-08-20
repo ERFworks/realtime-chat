@@ -23,9 +23,15 @@ dev = [
     "httpx2>=2.12.0",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.3",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.ruff.lint]
+# FastAPI uses Depends(...)/File(...) in function signatures by design, so B008
+# (function call in argument defaults) is a false positive for this framework.
+ignore = ["B008"]

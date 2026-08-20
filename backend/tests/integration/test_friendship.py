@@ -1,6 +1,12 @@
 import pytest
 from httpx2 import AsyncClient
-from tests.conftest import login_user, register_user, get_auth_headers, get_conversation_headers
+
+from tests.conftest import (
+    get_auth_headers,
+    login_user,
+    register_user,
+)
+
 
 @pytest.mark.asyncio
 async def test_request_successful_friendship(client: AsyncClient):
@@ -45,7 +51,7 @@ async def test_reject_duplicate_requests(client: AsyncClient):
 
     headers = await get_auth_headers(client, username="erf")
 
-    response_a = await client.post(
+    await client.post(
         "/api/v1/friends/requests/2",
         headers = headers
     )

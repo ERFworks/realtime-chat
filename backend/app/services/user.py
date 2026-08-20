@@ -1,6 +1,6 @@
+from app.adapters.file_storage import AbstractFileStorage
 from app.schemas.auth import UserOut
 from app.services.unit_of_work import AbstractUnitOfWork
-from app.adapters.file_storage import AbstractFileStorage
 
 
 async def search_users(

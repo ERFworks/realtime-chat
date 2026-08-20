@@ -1,11 +1,12 @@
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Protocol
 
-from app.models.conversation import ConversationType, Conversation
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.conversation import Conversation, ConversationType
 from app.models.conversationparticipant import ConversationParticipant
-from app.models.user import User
 from app.models.profile import Profile
+from app.models.user import User
 
 
 class AbstractConversationRepository(Protocol):

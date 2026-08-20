@@ -1,19 +1,19 @@
 import pytest
 from fastapi import HTTPException
 
+from app.models.conversation import Conversation, ConversationType
 from app.models.user import User
-from app.utils.time import utcnow
-from app.models.conversation import ConversationType , Conversation
-from app.services.conversation import(
+from app.services.conversation import (
     get_or_create_private_conversation,
-    list_conversations
+    list_conversations,
 )
+from app.utils.time import utcnow
 from tests.unit.fakes import (
+    FakeConversationRepository,
     FakeFileStorage,
     FakeUnitOfWork,
-    FakeConversationRepository,
-    FakeUserRepository
-) 
+    FakeUserRepository,
+)
 
 
 def make_conversation(conversation_id: int = 1) -> Conversation:

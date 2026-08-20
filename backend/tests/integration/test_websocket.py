@@ -14,9 +14,11 @@ def _register_and_login(sync_client, username: str) -> str:
 
 
 def test_ws_rejects_invalid_token(sync_client):
-    with pytest.raises(WebSocketDisconnect) as exc:
-        with sync_client.websocket_connect("/api/v1/ws") as ws:
-            ws.receive_json()
+    with (
+        pytest.raises(WebSocketDisconnect) as exc,
+        sync_client.websocket_connect("/api/v1/ws") as ws,
+    ):
+        ws.receive_json()
 
     assert exc.value.code == 1008
 
@@ -31,18 +33,20 @@ def test_ws_broadcast_message_to_other_user(sync_client):
         headers={"Authorization": f"Bearer {token_a}"},
     ).json()["conversation_id"]
 
-    with sync_client.websocket_connect(f"/api/v1/ws?token={token_b}") as ws_b:
-        with sync_client.websocket_connect(f"/api/v1/ws?token={token_a}") as ws_a:
-            ws_a.send_json({"conversation_id": conv_id, "body": "Hi!"})
+    with (
+        sync_client.websocket_connect(f"/api/v1/ws?token={token_b}") as ws_b,
+        sync_client.websocket_connect(f"/api/v1/ws?token={token_a}") as ws_a,
+    ):
+        ws_a.send_json({"conversation_id": conv_id, "body": "Hi!"})
 
-            for _ in range(5):
-                message = ws_b.receive_json()
-                if message.get("type") == "message":
-                    assert message["data"]["body"] == "Hi!"
-                    assert message["data"]["sender_id"] == 1
-                    break
-            else:
-                pytest.fail("Expected a message broadcast, got nothing")
+        for _ in range(5):
+            message = ws_b.receive_json()
+            if message.get("type") == "message":
+                assert message["data"]["body"] == "Hi!"
+                assert message["data"]["sender_id"] == 1
+                break
+        else:
+            pytest.fail("Expected a message broadcast, got nothing")
 
 
 def test_ws_rejects_message_from_non_participant(sync_client):
@@ -75,9 +79,11 @@ def test_ws_connect_rate_limit(sync_client):
         with sync_client.websocket_connect(f"/api/v1/ws?token={token}") as ws:
             ws.send_text("ping")
 
-    with pytest.raises(WebSocketDisconnect) as exc:
-        with sync_client.websocket_connect(f"/api/v1/ws?token={token}") as ws:
-            ws.receive_json()
+    with (
+        pytest.raises(WebSocketDisconnect) as exc,
+        sync_client.websocket_connect(f"/api/v1/ws?token={token}") as ws,
+    ):
+        ws.receive_json()
 
     assert exc.value.code == 1008
 

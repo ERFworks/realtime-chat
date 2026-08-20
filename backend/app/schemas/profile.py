@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class ProfileUpdate(BaseModel):
     biography: str | None = Field(default=None, max_length=500)

@@ -58,7 +58,7 @@ class ConnectionManager:
         for websocket in set(connections):
             try:
                 await websocket.send_json(message)
-            except Exception:
+            except Exception:  # noqa: BLE001 - any send failure means the socket is dead
                 dead_connections.append(websocket)
 
         for websocket in dead_connections:
@@ -133,7 +133,9 @@ class ConnectionManager:
             try:
                 await websocket.close(code=1001)
             except Exception:
-                pass
+                logger.debug(
+                    "Failed to close websocket during shutdown", exc_info=True
+                )
 
         self.active_connections.clear()
 

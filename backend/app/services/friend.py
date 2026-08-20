@@ -1,9 +1,9 @@
-from fastapi import HTTPException , status
+from fastapi import HTTPException, status
 
-from app.schemas.friend import FriendOut
-from app.schemas.auth import UserOut
-from app.models.friendship import FriendshipStatus
 from app.adapters.file_storage import AbstractFileStorage
+from app.models.friendship import FriendshipStatus
+from app.schemas.auth import UserOut
+from app.schemas.friend import FriendOut
 from app.services.unit_of_work import AbstractUnitOfWork
 
 

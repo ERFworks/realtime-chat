@@ -1,6 +1,9 @@
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
+
 from app.models.friendship import FriendshipStatus
+
 
 class FriendRequestCreate(BaseModel):
     other_user_id: int

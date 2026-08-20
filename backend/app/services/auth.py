@@ -1,22 +1,22 @@
 import logging
 import uuid
 
-from jose import JWTError
 from fastapi import HTTPException, status
+from jose import JWTError
 from sqlalchemy.exc import IntegrityError
 
-from app.schemas.auth import UserOut, TokenOut
-from app.services.unit_of_work import AbstractUnitOfWork
-from app.services.token_store import AbstractTokenStore, RotationOutcome
-from app.utils.normalization import normalize
 from app.core.config import settings
 from app.core.security import (
-    hash_password,
-    verify_password,
     create_access_token,
     create_refresh_token,
-    decode_token
+    decode_token,
+    hash_password,
+    verify_password,
 )
+from app.schemas.auth import TokenOut, UserOut
+from app.services.token_store import AbstractTokenStore, RotationOutcome
+from app.services.unit_of_work import AbstractUnitOfWork
+from app.utils.normalization import normalize
 
 logger = logging.getLogger(__name__)
 

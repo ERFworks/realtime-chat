@@ -1,11 +1,15 @@
 import enum
-
-from app.utils.time import utcnow
-from app.db.base_class import Base
 from datetime import datetime
-from sqlalchemy import ForeignKey, DateTime, Enum, UniqueConstraint, CheckConstraint
-from sqlalchemy.orm import Mapped ,mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID
+from typing import TYPE_CHECKING
+
+from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.base_class import Base
+from app.utils.time import utcnow
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class FriendshipStatus(str, enum.Enum):

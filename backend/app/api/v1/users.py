@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, Query
 
-from app.api.deps import get_current_user, get_uow, get_file_storage
+from app.adapters.file_storage import AbstractFileStorage
+from app.api.deps import get_current_user, get_file_storage, get_uow
 from app.models.user import User
 from app.schemas.auth import UserOut
-from app.services.unit_of_work import AbstractUnitOfWork
-from app.adapters.file_storage import AbstractFileStorage
 from app.services import user as user_service
+from app.services.unit_of_work import AbstractUnitOfWork
 
 router = APIRouter(tags=["users"])
 

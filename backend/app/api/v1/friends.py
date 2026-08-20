@@ -1,14 +1,12 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, Depends, status
 
+from app.adapters.file_storage import AbstractFileStorage
+from app.api.deps import get_current_user, get_file_storage, get_uow
 from app.models.user import User
-from app.api.deps import get_current_user, get_uow, get_file_storage
-from app.schemas.friend import FriendOut
 from app.schemas.auth import UserOut
+from app.schemas.friend import FriendOut
 from app.services import friend as friend_service
 from app.services.unit_of_work import AbstractUnitOfWork
-from app.adapters.file_storage import AbstractFileStorage
-
-
 
 router = APIRouter(tags=["friends"])
 

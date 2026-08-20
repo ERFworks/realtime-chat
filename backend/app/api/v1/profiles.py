@@ -1,14 +1,11 @@
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, File, UploadFile
 
-from app.db.session import get_db
-from app.api.deps import get_current_user, get_uow, get_file_storage
-from app.schemas.profile import ProfileOut, ProfileUpdate
+from app.adapters.file_storage import AbstractFileStorage
+from app.api.deps import get_current_user, get_file_storage, get_uow
 from app.models.user import User
+from app.schemas.profile import ProfileOut, ProfileUpdate
 from app.services import profile as profile_service
 from app.services.unit_of_work import AbstractUnitOfWork
-from app.adapters.file_storage import AbstractFileStorage
-
-
 
 router = APIRouter(tags=["profiles"])
 

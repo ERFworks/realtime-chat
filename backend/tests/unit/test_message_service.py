@@ -1,11 +1,15 @@
 import pytest
 from fastapi import HTTPException
 
-from app.models.message import Message
 from app.models.conversation import Conversation, ConversationType
-from app.services.message import send_message, get_messages
-from tests.unit.fakes import FakeMessageRepository, FakeUnitOfWork, FakeConversationRepository
+from app.models.message import Message
+from app.services.message import get_messages, send_message
 from app.utils.time import utcnow
+from tests.unit.fakes import (
+    FakeConversationRepository,
+    FakeMessageRepository,
+    FakeUnitOfWork,
+)
 
 
 def make_message(message_id=1, conversation_id=1, sender_id=1, body="salam") -> Message:

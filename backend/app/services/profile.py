@@ -1,12 +1,12 @@
 import uuid
 
-from fastapi import HTTPException, status, UploadFile
+from fastapi import HTTPException, UploadFile, status
 
+from app.adapters.file_storage import AbstractFileStorage
 from app.core.config import settings
 from app.models.profile import Profile
 from app.schemas.profile import ProfileOut
 from app.services.unit_of_work import AbstractUnitOfWork
-from app.adapters.file_storage import AbstractFileStorage
 
 
 def _to_profile_out(profile: Profile, storage: AbstractFileStorage) -> ProfileOut:

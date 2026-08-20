@@ -1,11 +1,12 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from sqlalchemy import select, or_, and_
 from typing import Protocol
 
-from app.models.user import User
-from app.models.profile import Profile
+from sqlalchemy import and_, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
 from app.models.friendship import Friendship, FriendshipStatus
+from app.models.user import User
+
 
 class AbstractFriendRepository(Protocol):
     async def create_friend_request(self, requester_id: int, addressee_id: int) -> Friendship: ...

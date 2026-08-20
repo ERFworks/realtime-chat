@@ -1,12 +1,10 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, Depends, status
 
-from app.schemas.message import MessageOut, MessageCreate
-from app.db.session import get_db
 from app.api.deps import get_current_user, get_uow
 from app.models.user import User
+from app.schemas.message import MessageCreate, MessageOut
 from app.services import message as msg_service
-from app.services.unit_of_work import AbstractUnitOfWork 
-
+from app.services.unit_of_work import AbstractUnitOfWork
 
 router = APIRouter(tags=["messages"])
 

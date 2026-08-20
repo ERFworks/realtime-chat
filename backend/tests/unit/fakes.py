@@ -1,17 +1,19 @@
-from sqlalchemy.exc import IntegrityError
 from contextlib import asynccontextmanager
 
-from app.models.friendship import Friendship, FriendshipStatus
-from app.models.user import User
-from app.models.profile import Profile
-from app.models.message import Message
-from app.models.conversation import Conversation, ConversationType
-from app.models.conversationparticipant import ConversationParticipant
-from app.utils.time import utcnow
+from jose.exceptions import JWTError
+from sqlalchemy.exc import IntegrityError
+
 from app.core.security import decode_token, hash_token
+from app.models.conversation import Conversation, ConversationType
+from app.models.friendship import Friendship, FriendshipStatus
+from app.models.message import Message
+from app.models.profile import Profile
+from app.models.user import User
+from app.services.rate_limiter import AbstractRateLimiter
 from app.services.token_store import AbstractTokenStore, RotationOutcome
 from app.services.unit_of_work import AbstractUnitOfWork
-from app.services.rate_limiter import AbstractRateLimiter
+from app.utils.time import utcnow
+
 
 class FakeFriendRepository:
     def __init__(self, friendships=None, users: dict[int, User] | None = None):
@@ -300,7 +302,7 @@ class FakeTokenStore(AbstractTokenStore):
     async def revoke_access_token(self, token: str) -> None:
         try:
             payload = decode_token(token)
-        except Exception:
+        except JWTError:
             return
         if payload.get("type") == "access":
             self._denied.add(hash_token(token))

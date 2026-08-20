@@ -1,6 +1,12 @@
 import pytest
 from httpx2 import AsyncClient
-from tests.conftest import login_user, register_user, get_auth_headers, get_conversation_headers
+
+from tests.conftest import (
+    get_auth_headers,
+    get_conversation_headers,
+    register_user,
+)
+
 
 @pytest.mark.asyncio
 async def test_send_successful_message(client: AsyncClient):

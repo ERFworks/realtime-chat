@@ -2,6 +2,7 @@ from jose import JWTError
 
 from app.core.security import decode_token
 
+
 def authenticate_websocket_token(token: str | None) -> int | None:
 
     if not token:

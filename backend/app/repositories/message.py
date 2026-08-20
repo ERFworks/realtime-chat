@@ -1,6 +1,7 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from typing import Protocol
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.conversationparticipant import ConversationParticipant
 from app.models.message import Message

@@ -1,7 +1,8 @@
 import pytest
 from httpx2 import AsyncClient
 
-from tests.conftest import register_user, login_user, get_auth_headers
+from tests.conftest import get_auth_headers, register_user
+
 
 @pytest.mark.asyncio
 async def test_create_private_chat_successfull(client: AsyncClient):

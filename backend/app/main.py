@@ -1,18 +1,17 @@
 import asyncio
-
-from app.websocket import router as ws_router
-from app.websocket.manager import manager
-
 from contextlib import asynccontextmanager
-from starlette.concurrency import run_in_threadpool
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.concurrency import run_in_threadpool
 
-from app.api.v1 import auth, conversations, messages, friends, profiles, users
-from app.core.config import settings
 from app.adapters.file_storage import ensure_bucket_exists
+from app.api.v1 import auth, conversations, friends, messages, profiles, users
+from app.core.config import settings
 from app.db.redis import redis_client
+from app.websocket import router as ws_router
+from app.websocket.manager import manager
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

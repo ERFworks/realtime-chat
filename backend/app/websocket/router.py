@@ -1,15 +1,22 @@
 import asyncio
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, status, Depends
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 from pydantic import ValidationError
 
 from app.api.deps import get_rate_limiter, get_uow
 from app.schemas.message import MessageCreate
 from app.services import message as msg_service
-from app.websocket.manager import manager
-from app.websocket.auth import authenticate_websocket_token
-from app.services.unit_of_work import AbstractUnitOfWork
 from app.services.rate_limiter import AbstractRateLimiter
-
+from app.services.unit_of_work import AbstractUnitOfWork
+from app.websocket.auth import authenticate_websocket_token
+from app.websocket.manager import manager
 
 router = APIRouter()
 
@@ -41,13 +48,13 @@ async def websocket_endpont(
                     websocket.receive_json(),
                     timeout=20
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 try:
                     await websocket.send_json({"type": "ping"})
                     data = await asyncio.wait_for(
                         websocket.receive_json(), timeout=10
                     )
-                except Exception:
+                except Exception:  # noqa: BLE001 - any keepalive failure ends the connection
                     break
                 if isinstance(data, dict) and data.get("type") == "pong":
                     continue

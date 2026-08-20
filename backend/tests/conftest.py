@@ -3,13 +3,8 @@ import os
 import pytest
 import pytest_asyncio
 from httpx2 import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine
-)
-
 
 TEST_DATABSE_URL = (
     "postgresql+asyncpg://chat_test:chat_test@localhost:5433/chat_test"   
@@ -28,14 +23,14 @@ os.environ["ALGORITHM"] = "HS256"
 os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "15"
 os.environ["REFRESH_TOKEN_EXPIRE_DAYS"] = "7"
 
-from fastapi.testclient import TestClient
 import asyncio
 
-from app.db.base import Base  
-from app.main import app  
-from app.api.deps import get_db, get_file_storage, get_token_store, get_rate_limiter
-from tests.unit.fakes import FakeFileStorage, FakeTokenStore, FakeRateLimiter
-from app.services.unit_of_work import SqlAlchemyUnitOfWork
+from fastapi.testclient import TestClient
+
+from app.api.deps import get_db, get_file_storage, get_rate_limiter, get_token_store
+from app.db.base import Base
+from app.main import app
+from tests.unit.fakes import FakeFileStorage, FakeRateLimiter, FakeTokenStore
 
 test_engine = create_async_engine(
     TEST_DATABSE_URL,
@@ -155,8 +150,7 @@ async def get_conversation_headers(
 
     headers = await get_auth_headers(client, username="mmd")
 
-
-    response = await client.post(
+    await client.post(
         "/api/v1/conversations",
         json={"other_user_id":1},
         headers=headers

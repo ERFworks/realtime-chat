@@ -1,13 +1,11 @@
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
-
-from app.models.conversation import Conversation
-from app.services.unit_of_work import AbstractUnitOfWork
-from app.schemas.conversation import ConversationOut, ParticipantOut
-from app.models.user import User
 from app.adapters.file_storage import AbstractFileStorage
-
+from app.models.conversation import Conversation
+from app.models.user import User
+from app.schemas.conversation import ConversationOut, ParticipantOut
+from app.services.unit_of_work import AbstractUnitOfWork
 
 
 def _to_participant_out(user: User, profile_pic_key: str | None, storage: AbstractFileStorage) -> ParticipantOut:

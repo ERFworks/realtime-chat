@@ -1,7 +1,7 @@
 import pytest
 from httpx2 import AsyncClient
 
-from tests.conftest import register_user, login_user
+from tests.conftest import login_user, register_user
 
 
 @pytest.mark.asyncio
@@ -154,6 +154,7 @@ async def test_me_rejects_refresh_token(client: AsyncClient):
 
 
 from app.core.security import create_access_token
+
 
 @pytest.mark.asyncio
 async def test_me_rejects_non_numberic_token_subject(

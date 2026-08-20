@@ -1,8 +1,14 @@
-from app.utils.time import utcnow
-from app.db.base_class import Base
 from datetime import datetime
-from sqlalchemy import String, Integer, DateTime, ForeignKey, Text
-from sqlalchemy.orm import Mapped ,mapped_column, relationship
+from typing import TYPE_CHECKING
+
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.base_class import Base
+from app.utils.time import utcnow
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class Profile(Base):

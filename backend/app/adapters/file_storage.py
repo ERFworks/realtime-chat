@@ -7,6 +7,7 @@ from fastapi.concurrency import run_in_threadpool
 
 from app.core.config import settings
 
+
 class AbstractFileStorage(Protocol):
     async def put(self, key: str, content: bytes, content_type: str) -> None: ...
     async def delete(self, key: str) -> None: ...

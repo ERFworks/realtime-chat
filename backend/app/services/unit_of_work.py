@@ -1,18 +1,22 @@
 from abc import ABC, abstractmethod
+from typing import Self
 
-from app.repositories.user import AbstractUserRepository
-from app.repositories.friend import AbstractFriendRepository
-from app.repositories.profile import AbstractProfileRepository
-from app.repositories.message import AbstractMessageRepository
-from app.repositories.conversation import AbstractConversationRepository
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from app.db.session import AsyncSessionLocal
-from app.repositories.user import SqlAlchemyUserRepository
-from app.repositories.friend import SqlAlchemyFriendRepository
-from app.repositories.profile import SqlAlchemyProfileRepository
-from app.repositories.message import SqlAlchemyMessageRepository
-from app.repositories.conversation import SqlAlchemyConversationRepository
+from app.repositories.conversation import (
+    AbstractConversationRepository,
+    SqlAlchemyConversationRepository,
+)
+from app.repositories.friend import AbstractFriendRepository, SqlAlchemyFriendRepository
+from app.repositories.message import (
+    AbstractMessageRepository,
+    SqlAlchemyMessageRepository,
+)
+from app.repositories.profile import (
+    AbstractProfileRepository,
+    SqlAlchemyProfileRepository,
+)
+from app.repositories.user import AbstractUserRepository, SqlAlchemyUserRepository
 
 
 class AbstractUnitOfWork(ABC):
@@ -23,7 +27,7 @@ class AbstractUnitOfWork(ABC):
     conversations: AbstractConversationRepository
 
 
-    async def __aenter__(self) -> "AbstractUnitOfWork":
+    async def __aenter__(self) -> Self:
         return self
 
 
@@ -47,7 +51,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.session = session
 
 
-    async def __aenter__(self) -> "SqlAlchemyUnitOfWork":
+    async def __aenter__(self) -> Self:
         self.users = SqlAlchemyUserRepository(self.session)
         self.friends = SqlAlchemyFriendRepository(self.session)
         self.profiles = SqlAlchemyProfileRepository(self.session)

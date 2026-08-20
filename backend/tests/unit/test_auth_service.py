@@ -1,10 +1,10 @@
 import pytest
 from fastapi import HTTPException
 
+from app.core.security import create_access_token, create_refresh_token, hash_password
 from app.models.user import User
-from app.services.auth import register_user, authenticate_user, refresh_tokens, logout
-from app.core.security import hash_password, create_access_token, create_refresh_token
-from tests.unit.fakes import FakeUnitOfWork, FakeUserRepository, FakeTokenStore
+from app.services.auth import authenticate_user, logout, refresh_tokens, register_user
+from tests.unit.fakes import FakeTokenStore, FakeUnitOfWork, FakeUserRepository
 
 
 def make_user(user_id: int=1, username: str = "erf", password: str = "password123") -> User:

@@ -1,19 +1,18 @@
 from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.schemas.auth import RegisterIn, TokenOut, UserOut, RefreshIn, LogoutIn
-from app.models.user import User
 from app.api.deps import (
     get_current_user,
-    get_uow,
     get_token_store,
+    get_uow,
     oauth2_scheme,
     rate_limit,
 )
+from app.models.user import User
+from app.schemas.auth import LogoutIn, RefreshIn, RegisterIn, TokenOut, UserOut
 from app.services import auth as auth_service
-from app.services.unit_of_work import AbstractUnitOfWork
 from app.services.token_store import AbstractTokenStore
-
+from app.services.unit_of_work import AbstractUnitOfWork
 
 router = APIRouter(tags=["authentication"])
 

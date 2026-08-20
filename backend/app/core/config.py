@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     SQLALCHEMY_DATABASE_URL: str
     REDIS_URL: str = "redis://localhost:6379/0"

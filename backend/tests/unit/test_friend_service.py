@@ -1,14 +1,11 @@
 import pytest
 from fastapi import HTTPException
 
+from app.models.friendship import Friendship, FriendshipStatus
 from app.models.user import User
-from app.models.friendship import FriendshipStatus, Friendship
 from app.services.friend import add_friend
-from tests.unit.fakes import(
-    FakeUnitOfWork,
-    FakeFriendRepository,
-    FakeUserRepository
-)
+from tests.unit.fakes import FakeFriendRepository, FakeUnitOfWork, FakeUserRepository
+
 
 async def test_add_friend_rejects_self_request():
     uow = FakeUnitOfWork()
