@@ -3,8 +3,14 @@ from fastapi import HTTPException, status
 from app.adapters.file_storage import AbstractFileStorage
 from app.models.friendship import FriendshipStatus
 from app.schemas.auth import UserOut
-from app.schemas.friend import FriendOut
+from app.schemas.friend import (
+    FriendOut,
+    FriendRequesterInfo,
+    FriendRequestOut,
+)
 from app.services.unit_of_work import AbstractUnitOfWork
+from app.utils.time import utcnow
+from app.websocket.manager import manager
 
 
 async def add_friend(
@@ -27,10 +33,25 @@ async def add_friend(
 
         existing = await uow.friends.get_friendship_between(requester_id, addressee_id)
         if existing is not None:
-            raise HTTPException(
-                status_code = status.HTTP_409_CONFLICT,
-                detail = "Friendship already exists" 
-            )
+            if existing.status == FriendshipStatus.ACCEPTED:
+                raise HTTPException(
+                    status_code = status.HTTP_409_CONFLICT,
+                    detail = "You are already friends"
+                )
+
+            if existing.status == FriendshipStatus.PENDING:
+                raise HTTPException(
+                    status_code = status.HTTP_409_CONFLICT,
+                    detail = "A friend request already exists"
+                )
+
+            # REJECTED or BLOCKED → allow a fresh request.
+            existing.requester_id = requester_id
+            existing.addressee_id = addressee_id
+            existing.status = FriendshipStatus.PENDING
+            existing.created_at = utcnow()
+            await uow.commit()
+            return FriendOut.model_validate(existing)
 
         friendship = await uow.friends.create_friend_request(requester_id, addressee_id)
 
@@ -71,8 +92,24 @@ async def respond_to_request(
         new_status = FriendshipStatus.ACCEPTED if accept else FriendshipStatus.REJECTED
         updated = await uow.friends.update_friendship_status(friendship_id, new_status)
 
-
         await uow.commit()
+
+        if accept:
+            try:
+                payload = {
+                    "type": "friend_accepted",
+                    "data": {
+                        "friendship_id": friendship_id,
+                        "user_id": friendship.requester_id,
+                        "friend_id": friendship.addressee_id,
+                    },
+                }
+                # Notify both users so they can refresh their friends lists
+                await manager.send_to_user(friendship.requester_id, payload)
+                await manager.send_to_user(friendship.addressee_id, payload)
+            except Exception:
+                pass  # best-effort delivery — don't fail the request
+
         return FriendOut.model_validate(updated)
 
 
@@ -99,12 +136,36 @@ async def list_my_friends(
 
 async def list_my_pending_requests(
     uow: AbstractUnitOfWork,
-    user_id: int
-) -> list[FriendOut]:
+    user_id: int,
+    storage: AbstractFileStorage
+) -> list[FriendRequestOut]:
     async with uow:
         pending_requests = await uow.friends.list_pending_requests(user_id)
 
-        return [FriendOut.model_validate(p) for p in pending_requests]
+        result = []
+        for p in pending_requests:
+            requester = p.requester
+            profile_pic = (
+                requester.profile.profile_pic if requester.profile else None
+            )
+            result.append(
+                FriendRequestOut(
+                    friendship_id=p.friendship_id,
+                    requester_id=p.requester_id,
+                    addressee_id=p.addressee_id,
+                    status=p.status,
+                    created_at=p.created_at,
+                    requester=FriendRequesterInfo(
+                        user_id=requester.user_id,
+                        username=requester.username,
+                        first_name=requester.first_name,
+                        last_name=requester.last_name,
+                        profile_pic=storage.url_for(profile_pic),
+                    ),
+                )
+            )
+
+        return result
 
 
         

@@ -80,9 +80,15 @@ class SqlAlchemyFriendRepository:
 
     async def list_pending_requests(self, user_id: int):
 
-        stmt = select(Friendship).where(
-            Friendship.addressee_id == user_id,
-            Friendship.status == FriendshipStatus.PENDING
+        stmt = (
+            select(Friendship)
+            .where(
+                Friendship.addressee_id == user_id,
+                Friendship.status == FriendshipStatus.PENDING
+            )
+            .options(
+                selectinload(Friendship.requester).selectinload(User.profile)
+            )
         )
 
         result = await self.session.execute(stmt)
