@@ -1,0 +1,162 @@
+<div class="auth-page">
+  <div
+    class="auth-container"
+    [class.active]="isRegister"
+  >
+
+    <div class="form-box login">
+      <form (ngSubmit)="onLogin()">
+
+        <h1>Login</h1>
+
+        <div class="input-box">
+          <input
+            type="text"
+            name="loginUsername"
+            placeholder="Username"
+            [(ngModel)]="loginData.username"
+            required
+          />
+
+          <i class="bx bxs-user"></i>
+        </div>
+
+        <div class="input-box">
+          <input
+            type="password"
+            name="loginPassword"
+            placeholder="Password"
+            [(ngModel)]="loginData.password"
+            required
+          />
+
+          <i class="bx bxs-lock-alt"></i>
+        </div>
+
+        <div class="forgot">
+          <a href="#">Forgot Password?</a>
+        </div>
+
+        <button
+          type="submit"
+          class="btn"
+          [disabled]="loadingLogin || loadingRegister"
+        >
+          {{ loadingLogin ? 'Logging in...' : 'Login' }}
+        </button>
+
+        <p
+          class="error"
+          *ngIf="error && !isRegister"
+        >
+          {{ error }}
+        </p>
+
+      </form>
+    </div>
+
+    <div class="form-box register">
+      <form (ngSubmit)="onRegister()">
+
+        <h1>Registration</h1>
+
+        <div class="input-box">
+          <input
+            type="text"
+            name="regUsername"
+            placeholder="Username"
+            [(ngModel)]="registerData.username"
+            required
+          />
+
+          <i class="bx bxs-user"></i>
+        </div>
+
+        <div class="input-box">
+          <input
+            type="text"
+            name="regFirstName"
+            placeholder="First name"
+            [(ngModel)]="registerData.first_name"
+            required
+          />
+
+          <i class="bx bxs-id-card"></i>
+        </div>
+
+        <div class="input-box">
+          <input
+            type="text"
+            name="regLastName"
+            placeholder="Last name (optional)"
+            [(ngModel)]="registerData.last_name"
+          />
+
+          <i class="bx bxs-user-detail"></i>
+        </div>
+
+        <div class="input-box">
+          <input
+            type="password"
+            name="regPassword"
+            placeholder="Password"
+            [(ngModel)]="registerData.password"
+            required
+          />
+
+          <i class="bx bxs-lock-alt"></i>
+        </div>
+
+        <button
+          type="submit"
+          class="btn"
+          [disabled]="loadingRegister || loadingLogin"
+        >
+          {{ loadingRegister ? 'Registering...' : 'Register' }}
+        </button>
+
+        <p
+          class="error"
+          *ngIf="error && isRegister"
+        >
+          {{ error }}
+        </p>
+
+      </form>
+    </div>
+
+    <div class="toggle-box">
+
+      <div class="toggle-panel toggle-left">
+        <h1>Hello, Welcome!</h1>
+
+        <p>Don't have an account?</p>
+
+        <button
+          type="button"
+          class="btn"
+          (click)="toggle(true)"
+          [disabled]="loadingLogin || loadingRegister"
+        >
+          Register
+        </button>
+      </div>
+
+      <div class="toggle-panel toggle-right">
+        <h1>Welcome Back!</h1>
+
+        <p>Already have an account?</p>
+
+        <button
+          type="button"
+          class="btn"
+          (click)="toggle(false)"
+          [disabled]="loadingLogin || loadingRegister"
+        >
+          Login
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

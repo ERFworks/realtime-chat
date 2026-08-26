@@ -1,0 +1,714 @@
+<div class="chat-layout">
+
+  <div
+    class="toast"
+    *ngIf="toast$ | async as toast"
+  >
+    {{ toast }}
+  </div>
+
+  <aside class="sidebar">
+
+    <header class="sidebar-head">
+
+      <div class="greeting">
+        <span class="hello">Hello,</span>
+
+        <strong class="name">
+          {{ me()?.first_name || me()?.username || 'User' }}
+        </strong>
+      </div>
+
+      <div class="actions">
+
+        <button
+          type="button"
+          class="avatar-btn"
+          title="Profile"
+          (click)="openProfile()"
+        >
+          <img
+            *ngIf="myProfile()?.profile_pic"
+            [src]="myProfile()?.profile_pic"
+            alt="profile"
+          />
+
+          <span *ngIf="!myProfile()?.profile_pic">
+            {{ (me()?.first_name || me()?.username || 'U')[0] }}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          class="icon-btn add"
+          title="Add friend"
+          (click)="openSearch()"
+        >
+          <i class="bx bx-plus"></i>
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <div class="search-box">
+
+      <input
+        type="text"
+        placeholder="Search..."
+        [(ngModel)]="search"
+      />
+
+    </div>
+
+
+    <nav class="tabs">
+
+      <button
+        type="button"
+        [class.active]="tab() === 'chats'"
+        (click)="switchTab('chats')"
+      >
+        All Chats
+      </button>
+
+      <button
+        type="button"
+        [class.active]="tab() === 'contacts'"
+        (click)="switchTab('contacts')"
+      >
+        Contacts
+      </button>
+
+      <button
+        type="button"
+        [class.active]="tab() === 'requests'"
+        (click)="switchTab('requests')"
+      >
+        Requests
+
+        <span
+          class="badge"
+          *ngIf="pendingCount > 0"
+        >
+          {{ pendingCount }}
+        </span>
+      </button>
+
+    </nav>
+
+
+    <div class="list">
+
+      <div
+        class="loading"
+        *ngIf="loadingConversations() && tab() === 'chats'"
+      >
+        <span class="spinner"></span>
+        <p>Loading conversations...</p>
+      </div>
+
+
+      <ng-container
+        *ngIf="tab() === 'chats' && !loadingConversations()"
+      >
+
+        <button
+          type="button"
+          *ngFor="let c of filteredConversations"
+          class="list-item"
+          [class.selected]="c.conversation_id === activeConversation()?.conversation_id"
+          (click)="selectConversation(c)"
+        >
+
+          <span class="thumb">
+
+            <img
+              *ngIf="displayAvatar(c)"
+              [src]="displayAvatar(c)"
+              alt=""
+            />
+
+            <span *ngIf="!displayAvatar(c)">
+              {{ displayInitial(c) }}
+            </span>
+
+          </span>
+
+          <span class="meta">
+
+            <span class="title">
+              {{ displayName(c) }}
+            </span>
+
+            <span class="preview">
+              {{ c.conversation_type === 'group' ? 'Group' : 'Private chat' }}
+            </span>
+
+          </span>
+
+        </button>
+
+        <p
+          class="empty"
+          *ngIf="filteredConversations.length === 0"
+        >
+          No conversations found
+        </p>
+
+      </ng-container>
+
+
+      <ng-container *ngIf="tab() === 'contacts'">
+
+        <div
+          class="loading"
+          *ngIf="loadingFriends()"
+        >
+          <span class="spinner"></span>
+          <p>Loading contacts...</p>
+        </div>
+
+        <button
+          type="button"
+          *ngFor="let f of filteredFriends"
+          class="list-item"
+          (click)="startChatWith(f)"
+        >
+
+          <span class="thumb">
+
+            <img
+              *ngIf="f.profile_pic"
+              [src]="f.profile_pic"
+              alt=""
+            />
+
+            <span *ngIf="!f.profile_pic">
+              {{ (f.first_name || f.username)[0] }}
+            </span>
+
+          </span>
+
+          <span class="meta">
+
+            <span class="title">
+              {{ f.first_name || f.username }}
+            </span>
+
+            <span class="preview">
+              @{{ f.username }}
+            </span>
+
+          </span>
+
+        </button>
+
+        <p
+          class="empty"
+          *ngIf="!loadingFriends() && filteredFriends.length === 0"
+        >
+          No contacts
+        </p>
+
+      </ng-container>
+
+
+      <ng-container *ngIf="tab() === 'requests'">
+
+        <div
+          class="loading"
+          *ngIf="loadingRequests()"
+        >
+          <span class="spinner"></span>
+          <p>Loading requests...</p>
+        </div>
+
+
+        <div
+          *ngFor="let r of pendingRequests()"
+          class="request-item"
+        >
+
+          <span class="thumb">
+
+            <img
+              *ngIf="r.requester?.profile_pic"
+              [src]="r.requester.profile_pic"
+              alt=""
+            />
+
+            <span *ngIf="!r.requester?.profile_pic">
+              {{ (r.requester?.first_name || r.requester?.username || '?')[0] }}
+            </span>
+
+          </span>
+
+          <span class="meta">
+
+            <span class="title">
+              {{ r.requester?.first_name || r.requester?.username || 'User' }}
+            </span>
+
+            <span class="preview">
+              @{{ r.requester?.username }}
+            </span>
+
+          </span>
+
+          <span class="request-actions">
+
+            <button
+              type="button"
+              class="action-accept"
+              title="Accept"
+              [disabled]="respondingToId() === r.friendship_id"
+              (click)="acceptRequest(r)"
+            >
+              ✓
+            </button>
+
+            <button
+              type="button"
+              class="action-reject"
+              title="Reject"
+              [disabled]="respondingToId() === r.friendship_id"
+              (click)="rejectRequest(r)"
+            >
+              ✕
+            </button>
+
+          </span>
+
+        </div>
+
+
+        <p
+          class="empty"
+          *ngIf="!loadingRequests() && pendingRequests().length === 0 && !requestsLoadError()"
+        >
+          No pending requests
+        </p>
+
+        <button
+          type="button"
+          class="empty"
+          *ngIf="!loadingRequests() && requestsLoadError()"
+          (click)="loadRequests()"
+        >
+          Failed to load requests — retry
+        </button>
+
+      </ng-container>
+
+    </div>
+
+  </aside>
+
+
+  <main class="main">
+
+    <ng-container
+      *ngIf="activeConversation() as conversation; else emptyState"
+    >
+
+      <header class="chat-head">
+
+        <span class="thumb small">
+
+          <img
+            *ngIf="displayAvatar(conversation)"
+            [src]="displayAvatar(conversation)"
+            alt=""
+          />
+
+          <span *ngIf="!displayAvatar(conversation)">
+            {{ displayInitial(conversation) }}
+          </span>
+
+        </span>
+
+        <strong>
+          {{ displayName(conversation) }}
+        </strong>
+
+      </header>
+
+
+      <section class="messages" #messagesEl>
+
+        <div
+          class="loading"
+          *ngIf="loadingMessages$ | async"
+        >
+          <span class="spinner"></span>
+          <p>Loading messages...</p>
+        </div>
+
+        <p
+          class="error"
+          *ngIf="messagesError$ | async as err"
+        >
+          {{ err }}
+        </p>
+
+        <div
+          *ngFor="let m of messages$ | async"
+          class="bubble"
+          [class.mine]="isMine(m)"
+        >
+          {{ m.body }}
+        </div>
+
+      </section>
+
+
+      <footer class="composer">
+
+        <input
+          type="text"
+          placeholder="Type a message..."
+          [(ngModel)]="draft"
+          (keyup.enter)="send()"
+        />
+
+        <button
+          type="button"
+          (click)="send()"
+        >
+          <i class="bx bxs-send"></i>
+        </button>
+
+      </footer>
+
+    </ng-container>
+
+
+    <ng-template #emptyState>
+
+      <div class="placeholder">
+        Select a conversation to start chatting
+      </div>
+
+    </ng-template>
+
+  </main>
+
+
+  <!-- SEARCH USERS -->
+
+  <div
+    *ngIf="showSearch"
+    class="search-overlay"
+    (click)="closeSearch()"
+  >
+
+    <div
+      class="search-dialog"
+      (click)="$event.stopPropagation()"
+    >
+
+      <div class="search-dialog-head">
+
+        <h2>Find Users</h2>
+
+        <button
+          type="button"
+          class="search-close"
+          (click)="closeSearch()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="search-dialog-input">
+
+        <i class="bx bx-search"></i>
+
+        <input
+          type="text"
+          placeholder="Search by username or name..."
+          [ngModel]="searchQuery$ | async"
+          (ngModelChange)="onSearchInput($event)"
+        />
+
+      </div>
+
+
+      <div class="search-dialog-results">
+
+        <div
+          class="search-empty"
+          *ngIf="(searchQuery$ | async) === ''"
+        >
+          <i class="bx bx-search-alt"></i>
+          <p>Type a name to find users</p>
+        </div>
+
+
+        <div
+          class="search-loading"
+          *ngIf="searching$ | async"
+        >
+          <span class="spinner"></span>
+          <p>Searching...</p>
+        </div>
+
+
+        <div
+          *ngFor="let u of searchResults$ | async"
+          class="search-result"
+        >
+
+          <div class="search-result-avatar">
+
+            <img
+              *ngIf="u.profile_pic"
+              [src]="u.profile_pic"
+              alt=""
+            />
+
+            <span *ngIf="!u.profile_pic">
+              {{ (u.first_name || u.username)[0] }}
+            </span>
+
+          </div>
+
+
+          <div class="search-result-info">
+
+            <strong>
+              {{ u.first_name }}
+              <span
+                class="search-result-last"
+                *ngIf="u.last_name"
+              >
+                {{ u.last_name }}
+              </span>
+            </strong>
+
+            <span class="search-result-username">
+              @{{ u.username }}
+            </span>
+
+          </div>
+
+
+          <button
+            type="button"
+            class="search-result-btn"
+            [class.sent]="sentRequests().has(u.user_id)"
+            [disabled]="sendingTo() === u.user_id"
+            (click)="sendFriendRequest(u.user_id)"
+          >
+            <ng-container *ngIf="sendingTo() === u.user_id">
+              <span class="spinner"></span>
+              Sending
+            </ng-container>
+
+            <ng-container *ngIf="sendingTo() !== u.user_id">
+              {{ sentRequests().has(u.user_id) ? '✓ Sent' : 'Add Friend' }}
+            </ng-container>
+          </button>
+
+        </div>
+
+
+        <p
+          class="search-dialog-error"
+          *ngIf="searchError()"
+        >
+          {{ searchError() }}
+        </p>
+
+
+        <div
+          class="search-empty"
+          *ngIf="
+            !(searching$ | async) &&
+            (searchQuery$ | async) !== '' &&
+            (searchResults$ | async)?.length === 0 &&
+            !searchError()
+          "
+        >
+          <p>
+            No users found for
+            "{{ searchQuery$ | async }}"
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- PROFILE -->
+
+  <div
+    *ngIf="showProfile"
+    class="profile-overlay"
+    (click)="closeProfile()"
+  >
+
+    <div
+      class="profile-card"
+      (click)="$event.stopPropagation()"
+    >
+
+      <div class="profile-card-head">
+
+        <h2>My Profile</h2>
+
+        <button
+          type="button"
+          class="profile-close"
+          (click)="closeProfile()"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="profile-avatar">
+
+        <div class="profile-avatar-img">
+
+          <img
+            *ngIf="me()?.profile_pic || myProfile()?.profile_pic"
+            [src]="me()?.profile_pic || myProfile()?.profile_pic"
+            alt=""
+          />
+
+          <span *ngIf="!(me()?.profile_pic || myProfile()?.profile_pic)">
+            {{ (me()?.first_name || me()?.username || 'U')[0] }}
+          </span>
+
+        </div>
+
+
+        <div
+          class="profile-avatar-spinner"
+          *ngIf="uploadingAvatar$ | async"
+        >
+          <span class="spinner"></span>
+        </div>
+
+
+        <label
+          class="avatar-edit"
+          *ngIf="!(uploadingAvatar$ | async)"
+        >
+
+          <i class="bx bx-camera"></i>
+
+          <input
+            type="file"
+            accept="image/*"
+            (change)="onAvatarSelected($event)"
+            hidden
+          />
+
+        </label>
+
+      </div>
+
+
+      <div class="profile-status">
+
+        <p
+          class="profile-success"
+          *ngIf="profileSuccess$ | async as msg"
+        >
+          ✓ {{ msg }}
+        </p>
+
+        <p
+          class="profile-error"
+          *ngIf="profileError$ | async as err"
+        >
+          {{ err }}
+        </p>
+
+      </div>
+
+
+      <div class="profile-fields">
+
+        <div class="profile-field">
+
+          <span class="profile-field-label">Username</span>
+
+          <span class="profile-field-value">
+            @{{ me()?.username || '—' }}
+          </span>
+
+        </div>
+
+
+        <div class="profile-field">
+
+          <span class="profile-field-label">Name</span>
+
+          <span class="profile-field-value">
+            {{ me()?.first_name || '—' }}
+            {{ me()?.last_name || '' }}
+          </span>
+
+        </div>
+
+
+        <div class="profile-field bio">
+
+          <span class="profile-field-label">Bio</span>
+
+          <textarea
+            rows="3"
+            [(ngModel)]="profileBio"
+            placeholder="Write something about yourself..."
+            maxlength="500"
+          ></textarea>
+
+          <span class="profile-field-hint">
+            {{ profileBio.length || 0 }} / 500
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="save-profile"
+        (click)="saveProfile()"
+        [disabled]="savingProfile$ | async"
+      >
+        <span
+          class="spinner"
+          *ngIf="savingProfile$ | async"
+        ></span>
+
+        {{ (savingProfile$ | async) ? 'Saving...' : 'Save Changes' }}
+      </button>
+
+
+      <button
+        type="button"
+        class="profile-logout"
+        (click)="logout()"
+      >
+        <i class="bx bx-log-out"></i>
+        Logout
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
