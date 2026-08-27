@@ -1,59 +1,125 @@
-# Frontend
+# 💬 Realtime Chat — Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.0.8.
+<p align="center">
+  <strong>A modern real-time messaging frontend built with Angular 22</strong>
+</p>
 
-## Development server
+<p align="center">
+  A responsive chat application with authentication, conversations,
+  friends, user search, profile management and real-time WebSocket communication.
+</p>
 
-To start a local development server, run:
+<p align="center">
 
-```bash
-ng serve
-```
+![Angular](https://img.shields.io/badge/Angular-22-DD0031?style=for-the-badge&logo=angular&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-6.0.2-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![RxJS](https://img.shields.io/badge/RxJS-7.8-B7178C?style=for-the-badge&logo=reactivex&logoColor=white)
+![WebSocket](https://img.shields.io/badge/WebSocket-Real--Time-010101?style=for-the-badge&logo=websocket&logoColor=white)
+![SCSS](https://img.shields.io/badge/SCSS-CC6699?style=for-the-badge&logo=sass&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-4.0-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+</p>
 
-## Code scaffolding
+<p align="center">
+  🚧 <strong>Active Development</strong>
+</p>
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+---
 
-```bash
-ng generate component component-name
-```
+## 📸 Application Preview
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### 🔐 Login
 
-```bash
-ng generate --help
-```
+![Login](./docs/screenshots/login.png)
 
-## Building
+### 📝 Register
 
-To build the project run:
+![Register](./docs/screenshots/register.png)
 
-```bash
-ng build
-```
+### 💬 Chat
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+![Chat](./docs/screenshots/chat.png)
 
-## Running unit tests
+### 📱 Mobile
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+![Mobile](./docs/screenshots/mobile.png)
 
-```bash
-ng test
-```
+---
 
-## Running end-to-end tests
+# ✨ About The Project
 
-For end-to-end (e2e) testing, run:
+**Realtime Chat — Frontend** is a modern Single Page Application built with
+**Angular 22** for a real-time messaging platform.
 
-```bash
-ng e2e
-```
+The frontend provides the client-side experience for authentication,
+real-time messaging, conversations, friends, friend requests, user search,
+and profile management.
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+The application communicates with the backend through two main channels:
 
-## Additional Resources
+- 🌐 **REST API** — authentication, users, profiles, friends, conversations and messages
+- ⚡ **WebSocket** — real-time messaging and connection events
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+The project follows a modern Angular architecture using:
+
+- Standalone Components
+- Angular Signals
+- RxJS
+- Reactive Forms
+- Route Guards
+- HTTP Interceptors
+- Dedicated Services
+- Strongly typed TypeScript models
+
+The main goal of the project is to provide a clean, responsive and
+maintainable frontend architecture while delivering a smooth real-time
+messaging experience.
+
+---
+
+# 🚀 Features
+
+## 🔐 Authentication
+
+The application provides a complete authentication flow.
+
+### Current functionality
+
+- User registration
+- User login
+- Logout
+- Access token management
+- Refresh token handling
+- Protected routes
+- Authentication Guard
+- HTTP Authentication Interceptor
+
+### Authentication Flow
+
+```text
+┌─────────────────────┐
+│   Login / Register  │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│      REST API       │
+│   Authentication    │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│ Access + Refresh    │
+│       Tokens        │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│  Authentication     │
+│       Guard         │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│   Chat Application  │
+└─────────────────────┘
