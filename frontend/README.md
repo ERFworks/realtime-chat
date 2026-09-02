@@ -46,6 +46,56 @@
 
 ---
 
+# 🚀 Getting Started
+
+## Prerequisites
+
+- [Node.js 22+](https://nodejs.org/) and npm
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) *(for Docker setup)*
+
+## Option 1: Run with Docker (recommended)
+
+From the **repository root**:
+
+```bash
+cd ..
+cp backend/.env.example backend/.env
+docker compose up --build
+```
+
+The frontend is served at **http://localhost:4200** via nginx. The nginx container:
+- Serves the Angular static build at `/`
+- Proxies `/api/` requests to the backend at `http://backend:8000`
+- Proxies WebSocket connections (`/api/v1/ws`) to the backend with upgrade headers
+- Handles SPA routing (any unknown path falls back to `index.html`)
+
+This means the browser talks only to `localhost:4200` — no CORS issues.
+
+## Option 2: Run locally (development)
+
+```bash
+npm install
+npm start
+```
+
+The Angular dev server starts at **http://localhost:4200**. You need the backend running separately (see `backend/README.md`).
+
+## Build for production
+
+```bash
+npm run build -- --configuration=production
+```
+
+Output is written to `dist/frontend/browser/`.
+
+## Run tests
+
+```bash
+npm test
+```
+
+---
+
 # ✨ About The Project
 
 **Realtime Chat — Frontend** is a modern Single Page Application built with

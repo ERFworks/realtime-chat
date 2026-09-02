@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES:int
     REFRESH_TOKEN_EXPIRE_DAYS: int
 
-    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:4200"]
+    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:4200", "http://localhost"]
 
     model_config = SettingsConfigDict(env_file=".env")
 

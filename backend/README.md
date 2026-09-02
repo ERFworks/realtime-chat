@@ -111,7 +111,14 @@ Install the following tools:
 
 ### Option 1: Run the full stack with Docker Compose
 
-From this directory:
+From the **repository root** (recommended — runs frontend + backend together):
+
+```bash
+cp backend/.env.example backend/.env
+docker compose up --build
+```
+
+Or from **this directory** (backend only):
 
 ```bash
 cp .env.example .env
@@ -126,10 +133,11 @@ To stop the stack:
 docker compose down
 ```
 
-Available local services:
+Available local services (from root compose):
 
 | Service | Address | Purpose |
 | --- | --- | --- |
+| Frontend | `http://localhost:4200` | Angular SPA via nginx |
 | Backend | `http://localhost:8000` | REST API and WebSocket server |
 | PostgreSQL | `localhost:5432` | Application database |
 | Redis | `localhost:6379` | Token state, rate limiting, and Pub/Sub |
@@ -174,7 +182,7 @@ Copy `.env.example` to `.env` and update values for your environment. The most i
 | `ALGORITHM` | JWT signing algorithm | `HS256` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Access-token lifetime | `15` |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | Refresh-token lifetime | `7` |
-| `BACKEND_CORS_ORIGINS` | JSON array of allowed frontend origins | `["http://localhost:4200"]` |
+| `BACKEND_CORS_ORIGINS` | JSON array of allowed frontend origins | `["http://localhost:4200", "http://localhost"]` |
 
 > [!WARNING]
 > Never commit `.env` or reuse the example credentials outside local development. Use a long, randomly generated `SECRET_KEY` in every deployed environment.

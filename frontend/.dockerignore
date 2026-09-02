@@ -1,0 +1,11 @@
+node_modules
+.git
+.gitignore
+.vscode
+.angular
+coverage
+docs
+README.md
+.editorconfig
+.prettierrc
+tsconfig.spec.json
