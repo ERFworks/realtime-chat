@@ -315,4 +315,4 @@ npm test
 
 ## License
 
-This project is currently unlicensed. Contact the maintainers for usage terms.
+This project is licensed under the [MIT License](LICENSE).
